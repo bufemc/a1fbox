@@ -18,9 +18,15 @@ Please do not fork yet, a setup is really coming soon.
 - Fritz!Box - with enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
 - Later: [fritzconnection] >= v.{to_be_determined} - for retrieving and manipulating phonebooks 
 
+### License
+Not determined yet
+
+
+### Backstage
+
 #### Issues
 - CallMonitor
-    - socket might stop sending data after a while, see below: Socket keep alive problem
+    - socket might stop sending data after a while, fixed by now, by using TCP keep alive, see below
     - socket shutdown by stopping might lead to BrokenPipe exception in listener
 - No setup provided, yet
 
@@ -65,20 +71,38 @@ if anyone knows an official document please tell me!
 17.06.20 10:37:34;DISCONNECT;1;312; # Disconnect after 312 seconds of talking
 ```
 
-#### Socket keep-alive problem
-After running some time, no more call events are received from the call monitor socket,
-if you didn't set special flags, see in code. Testers are needed for Linux and Mac!
 
-- https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script
-- https://stackoverflow.com/questions/5686490/detect-socket-hangup-without-sending-or-receiving?noredirect=1&lq=1
-- https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/dd877220(v=vs.85)?redirectedfrom=MSDN
+#### Fritzbox's call monitor socket at port 1012 and TCP keep-alive
+As written in the article [TCP-Keep-Alive-in-Wikipedia]: 
+_"Transmission Control Protocol (TCP) keepalives are an optional feature, and if included must default to off."_
+So, why is this important here? Because it's off by default.
+
+If you set up the call monitor socket just without additional configuration, 
+few OS will make the socket a dead-end after about 2 hours (see deep-dive links below).
+
+Why _dead-end_? Because no more call events are received from the socket, BUT:
+the socket _seems_ to be still "up and running".
+
+The solution is easy, at least in some other languages: e.g.:
+- Java: ```socket.setKeepAlive(true);```
+- PHP: ```socket_set_option($socket, SOL_SOCKET, SO_KEEPALIVE, 1);```
+- Python: see [TCP-Keep-Alive-in-Python], unfortunately not that "pythonic" (or do you know better?)
+ 
+_I tried to solve it that way, but I really need feedback from Mac and Linux users if it works for them, too!_
+
+Links:
+- [TCP-Keep-Alive-in-Wikipedia]
+- [TCP-Keep-Alive-in-Python]
+
+More links - if you want to dive deeper:
+- https://stackoverflow.com/questions/5686490/detect-socket-hangup-without-sending-or-receiving
 - https://stackoverflow.com/questions/1480236/does-a-tcp-socket-connection-have-a-keep-alive
-- https://docs.python.org/3/library/socket.html#socket-timeouts
 - https://stackoverflow.com/questions/667640/how-to-tell-if-a-connection-is-dead-in-python
 - https://stackoverflow.com/questions/35861484/how-to-know-the-if-the-socket-connection-is-closed-in-python
+- https://tewarid.github.io/2013/08/16/handling-tcp-keep-alive.html
 
-#### License
-Not determined yet
-
-[fritzconnection]: https://github.com/kbr/fritzconnection
 [Airport1]: https://www.airport1.de/
+[TCP-Keep-Alive-in-Wikipedia]: https://en.wikipedia.org/wiki/Keepalive#TCP_keepalive
+[TCP-Keep-Alive-in-Python]: https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script
+[fritzconnection]: https://github.com/kbr/fritzconnection
+

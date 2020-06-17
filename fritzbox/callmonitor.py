@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 
-import platform
 import contextlib
 import logging
+import os
+import platform
 import socket
 import threading
 import time
+from datetime import datetime
 from enum import Enum
 
 # ToDo: provide a config.py - with user & pass for other services
@@ -25,13 +27,28 @@ class CallMonitorType(Enum):
 
 
 class CallMonitorLine:
-    """ Parses a received line from call monitor, parameters are separated by ';' finished by a newline '\n'. """
+    """ Parse or anonymize a line from call monitor, parameters are separated by ';' finished by a newline '\n'. """
 
-    def __init__(self, line):
+    @staticmethod
+    def anonymize(raw_line):
+        """ Replaces last 3 chars of phone numbers with xxx. Nothing to do for the disconnect event. """
+        params = raw_line.strip().split(';', 7)
+        type = params[1]
+        if type == CallMonitorType.CONNECT.value:
+            params[4] = params[4][:-3] + "xxx"
+        elif type == CallMonitorType.RING.value:
+            params[3] = params[3][:-3] + "xxx"
+            params[4] = params[4][:-3] + "xxx"
+        elif type == CallMonitorType.CALL.value:
+            params[4] = params[4][:-3] + "xxx"
+            params[5] = params[5][:-3] + "xxx"
+        return ';'.join(params) + "\n"
+
+    def __init__(self, raw_line):
         """ A line from call monitor has min. 4 and max. 7 parameters, but the order depends on the type. """
         self.duration = 0
         self.ext_id, self.caller, self.callee, self.device = None, None, None, None
-        self.datetime, self.type, self.conn_id, *more = line.strip().split(';', 7)
+        self.datetime, self.type, self.conn_id, *more = raw_line.strip().split(';', 7)
         self.date, self.time = self.datetime.split(' ')
         if self.type == CallMonitorType.DISCONNECT.value:
             self.duration = more[0]
@@ -55,14 +72,46 @@ class CallMonitorLine:
 
 
 class CallMonitorLog:
-    """ ToDo: Provide log writer, and a simulator to read from it and simulate each line, e.g. by unit tests later. """
-    pass
+
+    def __init__(self, file_prefix="callmonitor", log_folder=None, daily=False, anonymize=False):
+        """ Where to save the log file, whether file for each day and whether phone numbers should be anonymized. """
+
+        self.do_daily = daily
+        self.do_anon = anonymize
+        self.file_prefix = file_prefix
+        if log_folder:
+            self.log_folder = log_folder
+        else:
+            self.log_folder = os.path.join(os.path.dirname(__file__), "log")
+        os.makedirs(self.log_folder, exist_ok=True)
+
+    def get_log_filepath(self):
+        """ Build the file path, one log or daily log. """
+        if self.do_daily:
+            dt = datetime.today().strftime('%Y%m%d')
+            return os.path.join(self.log_folder, f'{self.file_prefix}-{dt}.log')
+        else:
+            return os.path.join(self.log_folder, f'{self.file_prefix}.log')
+
+    def append_line(self, raw_line, remove_duplicates=False):
+        """ Appends a raw line to the log. """
+        filepath = self.get_log_filepath()
+        if self.do_anon:
+            raw_line = CallMonitorLine.anonymize(raw_line)
+        if remove_duplicates:  # ToDo: only add lines if not already present
+            pass
+        with open(filepath, "a") as f:
+            f.write(raw_line)
+
+    def simulate_from_file(self, raw_file_path, anonymize=False):
+        """ Read from raw file and parse each line. Could be used e.g. by unit tests later. """
+        pass
 
 
 class CallMonitor:
     """ Connect and listen to call monitor of Fritzbox, port is by default 1012. Enable it by dialing #96*5*. """
 
-    def __init__(self, host=FRITZ_HOST, port=1012, autostart=True):
+    def __init__(self, host=FRITZ_HOST, port=1012, autostart=True, logger=None):
         """ By default will start the call monitor automatically and parse the lines. """
         self.host = host
         self.port = port
@@ -70,6 +119,7 @@ class CallMonitor:
         self.thread = None
         self.active = False
         self.callback = self.parse_line
+        self.logger = logger
         if autostart:
             self.start()
 
@@ -78,6 +128,8 @@ class CallMonitor:
         log.debug(raw_line)
         parsed_line = CallMonitorLine(raw_line)
         print(parsed_line)
+        if self.logger:
+            self.logger.append_line(raw_line)
 
     def set_callback(self, callback_method):
         """ Optionally override the callback method to parse the raw_line yourself or with help of CallMonitorLine. """
@@ -92,23 +144,24 @@ class CallMonitor:
         interval_sec = 3
         max_fails = 5
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        if platform.system() == 'Windows':
+        op_sys = platform.system()
+        if op_sys == 'Windows':
             self.socket.ioctl(socket.SIO_KEEPALIVE_VALS, (1, keep_alive_sec * 1000, interval_sec * 1000))
-        elif platform.system() == 'Darwin':  # Mac
+        elif op_sys == 'Darwin':  # Mac
             TCP_KEEPALIVE = 0x10
             self.socket.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, interval_sec)
-        elif platform.system() == 'Linux':
+        elif op_sys == 'Linux':
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, after_idle_sec)
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval_sec)
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)
+        else:
+            print("You use an unidentified operating system: {}".format(op_sys))
+        # Connect to Fritzbox call monitor port - might raise an exception, e.g. if port closed or host/port are wrong
         self.socket.connect((self.host, self.port))
 
     def start(self):
         """ Starts the socket connection and the listener thread. """
-        if self.socket:
-            log.warning("Call monitor already started")
-            return
         try:
             msg = "Call monitor connection {h}:{p} ".format(h=self.host, p=self.port)
             self.connect_socket()
@@ -122,7 +175,7 @@ class CallMonitor:
 
     def stop(self):
         """ Tries to stop the socket connection and the listener thread. Will sometimes fail. """
-        log.info("Stop listening..\n")
+        log.info("Stop listening..")
         self.active = False
         time.sleep(1)  # Give thread some time to recognize !self.active, better solution required
         if self.socket:
@@ -132,21 +185,27 @@ class CallMonitor:
 
     def listen_thread(self):
         """ Listens to the socket connection, however at some time socket does not send anymore. """
-        if self.active:
-            log.warning("Listen thread already started")
-            return
-        log.info("Start listening..\n")
-        print("Call monitor listening started..\n")
+        log.info("Start listening..")
+        print("Call monitor listening started..")
         self.active = True
         with contextlib.closing(self.socket.makefile()) as file:
             while (self.active):
                 if (self.socket._closed):
                     raise Exception("SOCKET DIED")
                 line_generator = (line for line in file if file)
-                for line in line_generator:
-                    self.callback(line)
+                for raw_line in line_generator:
+                    self.callback(raw_line)
 
 
 if __name__ == "__main__":
     # Just a quick and dirty example how to use the call monitor until a setup is provided
-    cm = CallMonitor(host='192.168.1.1')
+    print("To stop enter ! followed by ENTER key..")
+
+    cm_log = CallMonitorLog(daily=True, anonymize=False)
+    cm = CallMonitor(host='192.168.1.1', logger=cm_log)
+
+    key = ""
+    while key != "!":
+        key = input()
+
+    cm.stop()
