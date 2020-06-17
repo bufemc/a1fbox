@@ -19,8 +19,9 @@ Please do not fork yet, a setup is really coming soon.
 - Later: [fritzconnection] >= v.{to_be_determined} - for retrieving and manipulating phonebooks 
 
 #### Issues
-- CallMonitor: socket stops sending data after a while, re-establishing the connection might help
-- CallMonitor: socket shutdown by stopping might lead to BrokenPipe exception in listener
+- CallMonitor
+    - socket might stop sending data after a while, see below: Socket keep alive problem
+    - socket shutdown by stopping might lead to BrokenPipe exception in listener
 - No setup provided, yet
 
 #### Guessed parameters for call monitor types (there is no official document?)
@@ -47,10 +48,36 @@ if anyone knows an official document please tell me!
 16.06.20 17:55:16;DISCONNECT;1;6;  # Callee is disconnected (conn_id 1), 6 seconds duration?
 
 16.06.20 18:11:57;CALL;1;13;732xxx;01755290xxx;SIP1;  # Land line calls mobile
+
+17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0; # Call from D 952 to 69
+17.06.20 10:28:43;CONNECT;0;11;07191952xxx; # Connect from D accepted, 11 (extension id 11, not seconds?)
+17.06.20 10:30:31;DISCONNECT;0;109; # Disconnect after accepting and talking 109 seconds?
+17.06.20 10:30:57;CALL;1;11;69xxx;952xxx;SIP0; # Re-call to D, again 11 (extension id?)
+17.06.20 10:31:00;DISCONNECT;1;0;
+17.06.20 10:31:08;CALL;1;11;69xxx;952xxx;SIP0; # Trying several times..
+17.06.20 10:31:13;DISCONNECT;1;0;
+17.06.20 10:31:24;CALL;1;11;69xxx;952xxx;SIP0;
+17.06.20 10:31:27;DISCONNECT;1;0;
+17.06.20 10:31:54;CALL;1;11;69xxx;952xxx;SIP0;
+17.06.20 10:31:58;DISCONNECT;1;0;
+17.06.20 10:32:16;CALL;1;11;69xxx;952xxx;SIP0;
+17.06.20 10:32:23;CONNECT;1;11;952xxx; # D accepts call
+17.06.20 10:37:34;DISCONNECT;1;312; # Disconnect after 312 seconds of talking
 ```
 
-## License
- 
+#### Socket keep-alive problem
+After running some time, no more call events are received from the call monitor socket,
+if you didn't set special flags, see in code. Testers are needed for Linux and Mac!
+
+- https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script
+- https://stackoverflow.com/questions/5686490/detect-socket-hangup-without-sending-or-receiving?noredirect=1&lq=1
+- https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/dd877220(v=vs.85)?redirectedfrom=MSDN
+- https://stackoverflow.com/questions/1480236/does-a-tcp-socket-connection-have-a-keep-alive
+- https://docs.python.org/3/library/socket.html#socket-timeouts
+- https://stackoverflow.com/questions/667640/how-to-tell-if-a-connection-is-dead-in-python
+- https://stackoverflow.com/questions/35861484/how-to-know-the-if-the-socket-connection-is-closed-in-python
+
+#### License
 Not determined yet
 
 [fritzconnection]: https://github.com/kbr/fritzconnection
