@@ -34,7 +34,9 @@ class CallMonitorLine:
         """ Replaces last 3 chars of phone numbers with xxx. Nothing to do for the disconnect event. """
         params = raw_line.strip().split(';', 7)
         type = params[1]
-        if type == CallMonitorType.CONNECT.value:
+        if type == CallMonitorType.DISCONNECT.value:
+            return raw_line
+        elif type == CallMonitorType.CONNECT.value:
             params[4] = params[4][:-3] + "xxx"
         elif type == CallMonitorType.RING.value:
             params[3] = params[3][:-3] + "xxx"
@@ -98,12 +100,27 @@ class CallMonitorLog:
         filepath = self.get_log_filepath()
         if self.do_anon:
             raw_line = CallMonitorLine.anonymize(raw_line)
-        with open(filepath, "a") as f:
+        with open(filepath, "a", encoding='utf-8') as f:
             f.write(raw_line)
 
-    def simulate_from_file(self, raw_file_path, anonymize=False):
-        """ Read from raw file and parse each line. Could be used e.g. by unit tests later. """
-        pass
+    def parse_from_file(self, raw_file_path, print_raw=False, anonymize=False):
+        """ Read from raw file and parse each line. For unit tests OR EVEN INJECTION (instead of socket) later. """
+        with open(raw_file_path, "r", encoding='utf-8') as f:
+            for line in f.readlines():
+                hash_pos = line.find('#')
+                if hash_pos != -1:
+                    line = line[:hash_pos]
+                line = line.strip()
+                if not line:  # Skip empty lines
+                    continue
+                line += "\n"
+                if anonymize:
+                    CallMonitorLine.anonymize(line)
+                if print_raw:
+                    print(line.strip())
+                else:
+                    cm_line = CallMonitorLine(line)
+                    print(cm_line)
 
 
 class CallMonitor:
@@ -201,6 +218,8 @@ if __name__ == "__main__":
 
     cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(host='192.168.1.1', logger=cm_log)
+
+    # cm_log.parse_from_file('log/callmonitor-test.log')
 
     key = ""
     while key != "!":

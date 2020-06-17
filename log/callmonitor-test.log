@@ -1,0 +1,29 @@
+# Example log for the call monitor, empty lines and comments are allowed
+
+16.06.20 12:25:42;RING;0;01755290xxx;732xxx;SIP1;  # Mobile calls land line
+16.06.20 12:25:46;DISCONNECT;0;0;  # After rejected or after CONNECT, last number duration?
+16.06.20 15:04:02;CALL;1;13;732xxx;01755290xxx;SIP1;  # Land line calls mobile
+16.06.20 15:04:02;CONNECT;0;0;01755290xxx;  # Accepting a RING by caller from mobile
+
+16.06.20 17:55:06;RING;2;07191732xxx;69xxx;SIP0;  # In-house-call from caller 732 to callee 69
+16.06.20 17:55:09;CONNECT;2;10;07191732xxx;  # Call is accepted for caller (conn_id 2)
+16.06.20 17:55:09;CONNECT;1;13;69xxx;  # Call is accepted for callee (conn_id 1)
+16.06.20 17:55:15;DISCONNECT;2;6;  # Caller hangs up (conn_id 2), 6 seconds duration?
+16.06.20 17:55:16;DISCONNECT;1;6;  # Callee is disconnected (conn_id 1), 6 seconds duration?
+
+16.06.20 18:11:57;CALL;1;13;732xxx;01755290xxx;SIP1;  # Land line calls mobile
+
+17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0; # Call from D 952 to 69
+17.06.20 10:28:43;CONNECT;0;11;07191952xxx; # Connect from D accepted, 11 (extension id 11, not seconds?)
+17.06.20 10:30:31;DISCONNECT;0;109; # Disconnect after accepting and talking 109 seconds?
+17.06.20 10:30:57;CALL;1;11;69xxx;952xxx;SIP0; # Re-call to D, again 11 (extension id?)
+17.06.20 10:31:00;DISCONNECT;1;0;
+17.06.20 10:31:08;CALL;1;11;69xxx;952xxx;SIP0; # Trying several times..
+17.06.20 10:31:13;DISCONNECT;1;0;
+17.06.20 10:31:24;CALL;1;11;69xxx;952xxx;SIP0;
+17.06.20 10:31:27;DISCONNECT;1;0;
+17.06.20 10:31:54;CALL;1;11;69xxx;952xxx;SIP0;
+17.06.20 10:31:58;DISCONNECT;1;0;
+17.06.20 10:32:16;CALL;1;11;69xxx;952xxx;SIP0;
+17.06.20 10:32:23;CONNECT;1;11;952xxx; # D accepts call
+17.06.20 10:37:34;DISCONNECT;1;312; # Disconnect after 312 seconds of talking
