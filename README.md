@@ -3,11 +3,10 @@
 Fritz!Box tool set by [Airport1], e.g. parsing the call monitor, later also adding phone entries to phonebook etc.
 
 ### Ingredients
-- Callmonitor - connect, listen, parse and print lines
-
-### Status
-Experimental - see issues. Should not be used in production, yet. REALLY ;)
-
+- Callmonitor - connect and listen to call monitor on port 1012 of the Fritzbox
+    - CallMonitorLine - line parser and phone number anonymizer
+    - CallMonitorLog - optional logger for lines, either one big file or daily files
+    
 ### Setup
 Unfortunately no setup procedure yet. You have to adapt your Fritz!Box host in the code (e.g. by IP), then run:
 ```python callmonitor.py```. Setup will be provided later, especially if more tools are added.
@@ -26,7 +25,7 @@ Not determined yet
 
 #### Issues
 - CallMonitor
-    - socket might stop sending data after a while, fixed by now, by using TCP keep alive, see below
+    - socket might stop sending data after a while, should work now by using TCP keep alive, see below
     - socket shutdown by stopping might lead to BrokenPipe exception in listener
 - No setup provided, yet
 

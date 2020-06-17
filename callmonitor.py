@@ -13,7 +13,7 @@ from enum import Enum
 # ToDo: provide a config.py - with user & pass for other services
 FRITZ_HOST = "fritz.box"
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
 
 
@@ -72,10 +72,10 @@ class CallMonitorLine:
 
 
 class CallMonitorLog:
+    """ Call monitor lines are logged to a file. So far call monitor uses method log_line only. """
 
     def __init__(self, file_prefix="callmonitor", log_folder=None, daily=False, anonymize=False):
-        """ Where to save the log file, whether file for each day and whether phone numbers should be anonymized. """
-
+        """ Where to log the call monitor lines, optionally file for each day or phone numbers anonymized. """
         self.do_daily = daily
         self.do_anon = anonymize
         self.file_prefix = file_prefix
@@ -93,13 +93,11 @@ class CallMonitorLog:
         else:
             return os.path.join(self.log_folder, f'{self.file_prefix}.log')
 
-    def append_line(self, raw_line, remove_duplicates=False):
+    def log_line(self, raw_line):
         """ Appends a raw line to the log. """
         filepath = self.get_log_filepath()
         if self.do_anon:
             raw_line = CallMonitorLine.anonymize(raw_line)
-        if remove_duplicates:  # ToDo: only add lines if not already present
-            pass
         with open(filepath, "a") as f:
             f.write(raw_line)
 
@@ -124,12 +122,12 @@ class CallMonitor:
             self.start()
 
     def parse_line(self, raw_line):
-        """ Default callback method, will parse and print the received lines. """
+        """ Default callback method, will parse, print and optionally log the received lines. """
         log.debug(raw_line)
         parsed_line = CallMonitorLine(raw_line)
         print(parsed_line)
         if self.logger:
-            self.logger.append_line(raw_line)
+            self.logger.log_line(raw_line)
 
     def set_callback(self, callback_method):
         """ Optionally override the callback method to parse the raw_line yourself or with help of CallMonitorLine. """
@@ -174,7 +172,7 @@ class CallMonitor:
             log.error("Error: {}\nDid you enable the call monitor by 'dialing' #96*5*?".format(e))
 
     def stop(self):
-        """ Tries to stop the socket connection and the listener thread. Will sometimes fail. """
+        """ Stop the socket connection and the listener thread. Will sometimes fail. """
         log.info("Stop listening..")
         self.active = False
         time.sleep(1)  # Give thread some time to recognize !self.active, better solution required
@@ -184,7 +182,7 @@ class CallMonitor:
             self.thread.join()
 
     def listen_thread(self):
-        """ Listens to the socket connection, however at some time socket does not send anymore. """
+        """ Listen to the call monitor socket connection. Have to be TCP keep alive enabled. """
         log.info("Start listening..")
         print("Call monitor listening started..")
         self.active = True
@@ -198,8 +196,8 @@ class CallMonitor:
 
 
 if __name__ == "__main__":
-    # Just a quick and dirty example how to use the call monitor until a setup is provided
-    print("To stop enter ! followed by ENTER key..")
+    # Quick usage example
+    print("To stop enter '!' (exclamation mark) followed by ENTER key..")
 
     cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(host='192.168.1.1', logger=cm_log)
