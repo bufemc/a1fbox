@@ -69,10 +69,10 @@ class Phonebook(FritzPhonebook):
 
 
 if __name__ == "__main__":
-    # Quick test only
+    # Quick example how to use only
     pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
     contacts = pb.get_all_contacts(0)  # Exists always, but can be empty
     for contact in contacts:
         print(f'{contact.name}: {contact.numbers}')
-
+    # Works only if phonebook with id 2 exists and should not be executed too often
     # result = pb.add_contact(2, 'CallBlockerTest', '009912345')

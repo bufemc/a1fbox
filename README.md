@@ -11,9 +11,9 @@ Fritz!Box tool set by [Airport1], e.g. parsing the call monitor, later also addi
     - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55] 
     - Add contact to phonebook, see [fc-issue-50]    
 
-- CallBlocker: _in planning_
-    - _in planning_: Listen to callmonitor and check RING events for cold calls
-    - _in planning_: Add bad numbers to a specific phonebook for cold calls only
+- CallBlocker: _EXPERIMENTAL_
+    - Listen to callmonitor and check RING events for cold calls
+    - Add bad numbers to a specific phonebook for cold calls only
     
 ### Setup
 
@@ -36,7 +36,9 @@ Not determined yet
 - CallMonitor
     - socket might stop sending data after a while, should work now by using TCP keep alive, see below
     - socket shutdown by stopping might lead to BrokenPipe exception in listener
-
+- CallBlocker
+    - still very basic, missing: handling for failing requests, area_code determination, logging
+    
 #### Guessed parameters for call monitor types (there is no official document?)
 If anyone knows an official document please tell me!
 - date time;RING;connection_id;caller_number;callee_number;SIP1;\n

@@ -125,15 +125,15 @@ class CallMonitorLog:
 class CallMonitor:
     """ Connect and listen to call monitor of Fritzbox, port is by default 1012. Enable it by dialing #96*5*. """
 
-    def __init__(self, host=FRITZ_IP_ADDRESS, port=1012, autostart=True, logger=None, callback=None):
+    def __init__(self, host=FRITZ_IP_ADDRESS, port=1012, autostart=True, logger=None, parser=None):
         """ By default will start the call monitor automatically and parse the lines. """
         self.host = host
         self.port = port
         self.socket = None
         self.thread = None
         self.active = False
-        self.callback = callback if callback else self.parse_line
-        self.logger = logger
+        self.parser = parser if parser else self.parse_line  # Not optional
+        self.logger = logger  # Optional
         if autostart:
             self.start()
 
@@ -142,8 +142,6 @@ class CallMonitor:
         log.debug(raw_line)
         parsed_line = CallMonitorLine(raw_line)
         print(parsed_line)
-        if self.logger:
-            self.logger.log_line(raw_line)
 
     def connect_socket(self):
         """ Socket has to be keep-alive, otherwise call monitor from Fritzbox stops reporting after some time. """
@@ -199,17 +197,19 @@ class CallMonitor:
         print("Call monitor listening started..")
         self.active = True
         while (self.active):
-            if (self.socket._closed):  # Reconnect in case socket was closed
+            if (self.socket._closed):
+                log.warning("Socket closed - reconnecting..")
                 self.connect_socket()
             with contextlib.closing(self.socket.makefile()) as file:
                 line_generator = (line for line in file if self.active and file)
                 for raw_line in line_generator:
-                    self.callback(raw_line)
+                    self.parser(raw_line)
+                    if self.logger:
+                        self.logger(raw_line)
 
 
 if __name__ == "__main__":
-    # Quick test only
+    # Quick example how to use only
     cm_log = CallMonitorLog(daily=True, anonymize=False)
-    cm = CallMonitor(logger=cm_log)
-
-    #cm.stop()
+    cm = CallMonitor(logger=cm_log.log_line)
+    # cm.stop()
