@@ -1,3 +1,4 @@
+from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from phonebook import Phonebook
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 

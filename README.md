@@ -9,10 +9,10 @@ Fritz!Box tool set by [Airport1], e.g. parsing the call monitor, later also addi
     
 - Phonebook: inherited and extended from [fritzconnection]'s FritzPhonebook
     - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55] 
-    - _in planning_: Add contact to phonebook, see [fc-issue-50]    
+    - Add contact to phonebook, see [fc-issue-50]    
 
 - CallBlocker: _in planning_
-    - _in planning_: Listen to callmonitor and immediately check RING events for cold calls
+    - _in planning_: Listen to callmonitor and check RING events for cold calls
     - _in planning_: Add bad numbers to a specific phonebook for cold calls only
     
 ### Setup
