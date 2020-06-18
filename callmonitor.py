@@ -10,6 +10,8 @@ import time
 from datetime import datetime
 from enum import Enum
 
+from config import FRITZ_IP_ADDRESS
+
 # ToDo: provide a config.py - with user & pass for other services
 FRITZ_HOST = "fritz.box"
 
@@ -126,7 +128,7 @@ class CallMonitorLog:
 class CallMonitor:
     """ Connect and listen to call monitor of Fritzbox, port is by default 1012. Enable it by dialing #96*5*. """
 
-    def __init__(self, host=FRITZ_HOST, port=1012, autostart=True, logger=None):
+    def __init__(self, host=FRITZ_IP_ADDRESS, port=1012, autostart=True, logger=None):
         """ By default will start the call monitor automatically and parse the lines. """
         self.host = host
         self.port = port
@@ -213,16 +215,6 @@ class CallMonitor:
 
 
 if __name__ == "__main__":
-    # Quick usage example
-    print("To stop enter '!' (exclamation mark) followed by ENTER key..")
-
+    # Quick test only
     cm_log = CallMonitorLog(daily=True, anonymize=False)
-    cm = CallMonitor(host='192.168.1.1', logger=cm_log)
-
-    # cm_log.parse_from_file('log/callmonitor-test.log')
-
-    key = ""
-    while key != "!":
-        key = input()
-
-    cm.stop()
+    cm = CallMonitor(logger=cm_log)

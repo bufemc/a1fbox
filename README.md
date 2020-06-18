@@ -3,14 +3,23 @@
 Fritz!Box tool set by [Airport1], e.g. parsing the call monitor, later also adding phone entries to phonebook etc.
 
 ### Ingredients
-- Callmonitor - connect and listen to call monitor on port 1012 of the Fritzbox
-    - CallMonitorLine - line parser and phone number anonymizer
-    - CallMonitorLog - optional logger for lines, either one big file or daily files
+- CallMonitor: connect and listen to call monitor on port 1012 of the Fritzbox
+    - CallMonitorLine: line parser and phone number anonymizer
+    - CallMonitorLog: optional logger for lines, either one big file or daily files
+    
+- Phonebook: inherited and extended from [fritzconnection]'s FritzPhonebook
+    - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55] 
+    - _in planning_: Add contact to phonebook, see [fc-issue-50]    
+
+- CallBlocker: _in planning_
+    - _in planning_: Listen to callmonitor and immediately check RING events for cold calls
+    - _in planning_: Add bad numbers to a specific phonebook for cold calls only
     
 ### Setup
-Unfortunately no setup procedure yet. You have to adapt your Fritz!Box host in the code (e.g. by IP), then run:
-```python callmonitor.py```. Setup will be provided later, especially if more tools are added.
-Please do not fork yet, a setup is really coming soon.
+
+Use ```pip install -r requirements.txt``` to install dependencies. Adjust ```config.py``` to your 
+Fritz!Box settings (hint: you can also set ```"fritz.box"``` instead of an IP). 
+For an example implementation you could try to run ``` python example.py ```.
 
 ### Requirements
 - Python >= v.3.6 - as e.g. f'Hello, {name}!' is used
@@ -27,7 +36,6 @@ Not determined yet
 - CallMonitor
     - socket might stop sending data after a while, should work now by using TCP keep alive, see below
     - socket shutdown by stopping might lead to BrokenPipe exception in listener
-- No setup provided, yet
 
 #### Guessed parameters for call monitor types (there is no official document?)
 If anyone knows an official document please tell me!
@@ -104,4 +112,6 @@ More links - if you want to dive deeper:
 [TCP-Keep-Alive-in-Wikipedia]: https://en.wikipedia.org/wiki/Keepalive#TCP_keepalive
 [TCP-Keep-Alive-in-Python]: https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script
 [fritzconnection]: https://github.com/kbr/fritzconnection
-
+[fc-issue-50]: https://github.com/kbr/fritzconnection/issues/50
+[fc-issue-53]: https://github.com/kbr/fritzconnection/issues/53
+[fc-issue-55]: https://github.com/kbr/fritzconnection/issues/55
