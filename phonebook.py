@@ -48,23 +48,31 @@ class Phonebook(FritzPhonebook):
                 reverse_contacts[number] = name
         return reverse_contacts
 
-    def add_contact(self, phonebook_id, name, number):
-        """ ToDo: Temporary solution only. Add an entry to the specified phonebook. Should use a Contact obj later. """
+    def add_contact(self, id, name, number):
+        """ ToDo: Temporary solution only. Add an entry to the phonebook with `ìd`.
+        Should use a fritzconnection's Contact object and Soaper later. """
 
-        arg = {'NewPhonebookID': phonebook_id,
+        arg = {'NewPhonebookID': id,
                'NewPhonebookEntryID': '',
                'NewPhonebookEntryData':
-                   f'<Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><contact><category>0</category><person><realName>{name}</realName></person>'
-                   f'<telephony nid="1"><number type="home" prio="1" id="0">{number}</number></telephony></contact></Envelope>'}
+                   f'<Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">'
+                   f'<contact>'
+                   f'<category>0</category>'
+                   f'<person><realName>{name}</realName></person>'
+                   f'<telephony nid="1"><number type="home" prio="1" id="0">{number}</number></telephony>'
+                   f'</contact>'
+                   f'</Envelope>'}
 
         return self.fc.call_action('X_AVM-DE_OnTel:1', 'SetPhonebookEntry', arguments=arg)
+
+    # Ideas: reverse search?
 
 
 if __name__ == "__main__":
     # Quick test only
     pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
-    contacts = pb.get_all_contacts(0)  # Exists always, can only be empty
+    contacts = pb.get_all_contacts(0)  # Exists always, but can be empty
     for contact in contacts:
         print(f'{contact.name}: {contact.numbers}')
 
-    # pb.add_contact(2, 'CallBlockerTest', '009912345')
+    # result = pb.add_contact(2, 'CallBlockerTest', '009912345')

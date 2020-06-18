@@ -12,9 +12,6 @@ from enum import Enum
 
 from config import FRITZ_IP_ADDRESS
 
-# ToDo: provide a config.py - with user & pass for other services
-FRITZ_HOST = "fritz.box"
-
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
 
@@ -128,14 +125,14 @@ class CallMonitorLog:
 class CallMonitor:
     """ Connect and listen to call monitor of Fritzbox, port is by default 1012. Enable it by dialing #96*5*. """
 
-    def __init__(self, host=FRITZ_IP_ADDRESS, port=1012, autostart=True, logger=None):
+    def __init__(self, host=FRITZ_IP_ADDRESS, port=1012, autostart=True, logger=None, callback=None):
         """ By default will start the call monitor automatically and parse the lines. """
         self.host = host
         self.port = port
         self.socket = None
         self.thread = None
         self.active = False
-        self.callback = self.parse_line
+        self.callback = callback if callback else self.parse_line
         self.logger = logger
         if autostart:
             self.start()
@@ -147,10 +144,6 @@ class CallMonitor:
         print(parsed_line)
         if self.logger:
             self.logger.log_line(raw_line)
-
-    def set_callback(self, callback_method):
-        """ Optionally override the callback method to parse the raw_line yourself or with help of CallMonitorLine. """
-        self.callback = callback_method
 
     def connect_socket(self):
         """ Socket has to be keep-alive, otherwise call monitor from Fritzbox stops reporting after some time. """
@@ -205,11 +198,11 @@ class CallMonitor:
         log.info("Start listening..")
         print("Call monitor listening started..")
         self.active = True
-        with contextlib.closing(self.socket.makefile()) as file:
-            while (self.active):
-                if (self.socket._closed):
-                    raise Exception("SOCKET DIED")
-                line_generator = (line for line in file if file)
+        while (self.active):
+            if (self.socket._closed):  # Reconnect in case socket was closed
+                self.connect_socket()
+            with contextlib.closing(self.socket.makefile()) as file:
+                line_generator = (line for line in file if self.active and file)
                 for raw_line in line_generator:
                     self.callback(raw_line)
 
@@ -218,3 +211,5 @@ if __name__ == "__main__":
     # Quick test only
     cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(logger=cm_log)
+
+    #cm.stop()
