@@ -1,7 +1,11 @@
 #!/usr/bin/python3
 
+import logging
 from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from fritzconnection.lib.fritzphonebook import FritzPhonebook
+
+logging.basicConfig(level=logging.WARNING)
+log = logging.getLogger(__name__)
 
 KEEP_INTERNALS = False
 
@@ -48,11 +52,10 @@ class Phonebook(FritzPhonebook):
                 reverse_contacts[number] = name
         return reverse_contacts
 
-    def add_contact(self, id, name, number):
-        """ ToDo: Temporary solution only. Add an entry to the phonebook with `ìd`.
-        Should use a fritzconnection's Contact object and Soaper later. """
+    def add_contact(self, pb_id, name, number, skip_existing=True):
+        """ Bad style, but works. Should use a fritzconnection's Contact object and Soaper later. """
 
-        arg = {'NewPhonebookID': id,
+        arg = {'NewPhonebookID': pb_id,
                'NewPhonebookEntryID': '',
                'NewPhonebookEntryData':
                    f'<Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">'
@@ -63,9 +66,25 @@ class Phonebook(FritzPhonebook):
                    f'</contact>'
                    f'</Envelope>'}
 
+        if skip_existing:
+            pb_number_to_name = self.get_all_numbers(pb_id)  # [{Number: Name}, ..]
+            if number in pb_number_to_name.keys():
+                log.warning(f'{number} already in phonebook, skipped adding..')
+                return {}
+
         return self.fc.call_action('X_AVM-DE_OnTel:1', 'SetPhonebookEntry', arguments=arg)
 
-    # Ideas: reverse search? Import/export contacts from/to json? Edit an entry: set_contact by contact.uniqueid
+    def update_contact(self, pb_id, contact):
+        """ Idea: could use contact.uniqueid to update corresponding record in Fritz!Box phonebook with pb_id. """
+        raise NotImplementedError()
+
+    def import_contacts_from_json(self, pb_id, json_file, skip_existing=True):
+        """ Idea: could use a json file with a list of contact dict to populate a phonebook with pb_id. """
+        raise NotImplementedError()
+
+    def export_contacts_to_json(self, pb_id, json_file):
+        """ Idea: could export a phonebook with pb_id to a json file with a list of contact dict. """
+        raise NotImplementedError()
 
 
 if __name__ == "__main__":
@@ -74,5 +93,6 @@ if __name__ == "__main__":
     contacts = pb.get_all_contacts(0)  # Exists always, but can be empty
     for contact in contacts:
         print(f'{contact.name}: {contact.numbers}')
+
     # Works only if phonebook with id 2 exists and should not be executed too often
     # result = pb.add_contact(2, 'CallBlockerTest', '009912345')
