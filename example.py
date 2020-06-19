@@ -1,6 +1,4 @@
-from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
-from phonebook import Phonebook
-from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
+from callmonitor import CallMonitor, CallMonitorLog
 
 if __name__ == "__main__":
     print("To stop enter '!' (exclamation mark) followed by ENTER key..")

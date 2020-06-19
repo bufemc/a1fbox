@@ -1,6 +1,6 @@
 import os
-from datetime import datetime
 from abc import abstractmethod
+from datetime import datetime
 
 
 class Log:
@@ -27,5 +27,5 @@ class Log:
 
     @abstractmethod
     def log_line(self, line):
-        """ Appends a line to the log file. To do so use (self.)log_folder, file_prefix, do_daily, do_anon. """
+        """ Append a line to the log file. To do so use (self.)log_folder, file_prefix, do_daily, do_anon. """
         raise NotImplementedError("log_line not implemented")

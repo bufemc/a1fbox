@@ -2,17 +2,15 @@
 
 import contextlib
 import logging
-import os
 import platform
 import socket
 import threading
 import time
-from datetime import datetime
 from enum import Enum
 
 from config import FRITZ_IP_ADDRESS
-from utils import anonymize_number
 from log import Log
+from utils import anonymize_number
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
@@ -81,7 +79,7 @@ class CallMonitorLog(Log):
         super().__init__(file_prefix, log_folder, daily, anonymize)
 
     def log_line(self, line):
-        """ Appends a raw call monitor line to the log file. Optionally anonymize phone numbers. """
+        """ Append a raw call monitor line to the log file. Optionally anonymize phone numbers. """
         filepath = self.get_log_filepath()
         if self.do_anon:
             line = CallMonitorLine.anonymize(line)
@@ -96,11 +94,11 @@ class CallMonitorLog(Log):
                 hash_pos = line.find('#')
                 if hash_pos != -1:
                     line = line[:hash_pos]
-                # Remove new lines, skip empty lines
+                # Remove newline, skip empty lines
                 line = line.strip()
                 if not line:
                     continue
-                # Re-append previously stripped new line
+                # Re-append previously stripped newline
                 line += "\n"
                 if anonymize:
                     CallMonitorLine.anonymize(line)
@@ -121,13 +119,13 @@ class CallMonitor:
         self.socket = None
         self.thread = None
         self.active = False
-        self.parser = parser if parser else self.parse_line  # Not optional
-        self.logger = logger  # Optional
+        self.parser = parser if parser else self.parse_line
+        self.logger = logger
         if autostart:
             self.start()
 
     def parse_line(self, raw_line):
-        """ Default callback method, will parse, print and optionally log the received lines. """
+        """ Default parser method for received call monitor lines. """
         log.debug(raw_line)
         parsed_line = CallMonitorLine(raw_line)
         print(parsed_line)
@@ -154,11 +152,10 @@ class CallMonitor:
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)
         else:
             print("You use an unidentified operating system: {}".format(op_sys))
-        # Connect to Fritzbox call monitor port - might raise an exception, e.g. if port closed or host/port are wrong
         self.socket.connect((self.host, self.port))
 
     def start(self):
-        """ Starts the socket connection and the listener thread. """
+        """ Start the socket connection and the listener thread. """
         try:
             msg = "Call monitor connection {h}:{p} ".format(h=self.host, p=self.port)
             self.connect_tcp_keep_alive_socket()
@@ -171,7 +168,7 @@ class CallMonitor:
             log.error("Error: {}\nDid you enable the call monitor by 'dialing' #96*5*?".format(e))
 
     def stop(self):
-        """ Stop the socket connection and the listener thread. Will sometimes fail. """
+        """ Stop the socket connection and the listener thread. """
         log.info("Stop listening..")
         self.active = False
         time.sleep(1)  # Give thread some time to recognize !self.active, better solution required
@@ -201,5 +198,4 @@ if __name__ == "__main__":
     # Quick example how to use only
     cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(logger=cm_log.log_line)
-    cm_log.log_line('quak')
     # cm.stop()

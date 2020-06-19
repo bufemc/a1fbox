@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import logging
+
 from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from fritzconnection.lib.fritzphonebook import FritzPhonebook
 

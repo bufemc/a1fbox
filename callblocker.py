@@ -1,11 +1,11 @@
+import csv
 import logging
 
-import csv
 import requests
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
-from phonebook import Phonebook
 from log import Log
+from phonebook import Phonebook
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
@@ -28,7 +28,10 @@ class CallBlockerLog(Log):
 
 
 class CallBlocker:
+    """ Parse call monitor, examine RING event's phone number. """
+
     def __init__(self, whitelist_pbid, blacklist_pbid, min_score=6, min_comments=3, logger=None):
+        """ Provide a whitelist phonebook (normally first index 0) and where blocked numbers should go into. """
         self.whitelist_pbid = whitelist_pbid
         self.blacklist_pbid = blacklist_pbid
         self.min_score = int(min_score)
@@ -49,6 +52,7 @@ class CallBlocker:
               f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
 
     def set_area_and_country_code(self):
+        """ Retrieve area and country code via the Fritzbox. """
         res = self.pb.fc.call_action('X_VoIP', 'X_AVM-DE_GetVoIPCommonAreaCode')
         self.area_code = res['NewX_AVM-DE_OKZPrefix'] + res['NewX_AVM-DE_OKZ']
         res = self.pb.fc.call_action('X_VoIP', 'X_AVM-DE_GetVoIPCommonCountryCode')
@@ -56,6 +60,7 @@ class CallBlocker:
         self.area = self.onb_dict[self.area_code] if self.area_code in self.onb_dict else None
 
     def init_onb(self):
+        """ Read the area codes into a dict. provided by BNetzA as CSV, separated by ';'. """
         with open('./data/onb.csv', encoding='utf-8') as csvfile:
             line_nr = 0
             csvreader = csv.reader(csvfile, delimiter=';')
@@ -75,6 +80,7 @@ class CallBlocker:
                 line_nr += 1
 
     def parse_and_examine_line(self, raw_line):
+        """ Parse call monitor line, if RING event not in lists, rate and maybe block the number. """
         log.debug(raw_line)
         cm_line = CallMonitorLine(raw_line)
         print(cm_line)
@@ -132,6 +138,8 @@ class CallBlocker:
                 if self.logger:
                     self.logger(f'BLOCKED:{number};name:{name};score:{score};comments:{comment_count};')
 
+    # Ideas: reverse search via dasoertliche? Is there an API?
+
 
 if __name__ == "__main__":
     # Quick example how to use only
@@ -144,4 +152,4 @@ if __name__ == "__main__":
     # test_line = '17.06.20 10:28:29;RING;0;0781968053101;69xxx;SIP0;'
     # cb.parse_and_examine_line(test_line)
 
-    # Ideas: reverse search via dasoertliche?
+    # cm.stop()
