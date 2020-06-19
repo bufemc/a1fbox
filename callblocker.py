@@ -17,7 +17,7 @@ class CallBlockerLog(Log):
         super().__init_subclass__(**kwargs)
 
     def log_line(self, line):
-        """ Appends a raw line to the log. """
+        """ Appends a line to the log file. """
         filepath = self.get_log_filepath()
         if self.do_anon:
             # Not implemented yet
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     cm = CallMonitor(logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 
     # Provoke by test
-    test_line = '17.06.20 10:28:29;RING;0;0781968053101;69xxx;SIP0;'
-    cb.parse_and_examine_line(test_line)
+    # test_line = '17.06.20 10:28:29;RING;0;0781968053101;69xxx;SIP0;'
+    # cb.parse_and_examine_line(test_line)
 
     # Ideas: reverse search?

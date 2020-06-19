@@ -1,6 +1,6 @@
 # Airport1 Fritzbox Tools
 
-Fritz!Box tool set by [Airport1], e.g. connect and parse the call monitor, phonebook handling, call blocking.
+Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handling, automated call blocking.
 
 ### Ingredients
 - CallMonitor: connect and listen to call monitor on port 1012 of the Fritzbox
@@ -12,18 +12,19 @@ Fritz!Box tool set by [Airport1], e.g. connect and parse the call monitor, phone
     - Add contact to phonebook, see [fc-issue-50]    
 
 - CallBlocker: _EXPERIMENTAL_
-    - Listen to call monitor and check RING events for cold calls
+    - Listen to call monitor and check RING events for cold calls 
     - Add bad numbers to a specific phonebook for cold calls only
     
 ### Setup
 
-Use ```pip install -r requirements.txt``` to install dependencies. Adjust ```config.py``` to your 
-Fritz!Box settings (hint: you can also set ```"fritz.box"``` instead of an IP). 
+Use ```pip install -r requirements.txt``` to install dependencies. 
+Adjust ```config.py``` to your Fritz!Box settings (hint: you can also set ```"fritz.box"``` 
+instead of an IP). 
 For an example implementation you could try to run ``` python example.py ```.
 
 ### Requirements
 - Python >= 3.6 - as e.g. f'Hello, {name}!' is used
-- [fritzconnection] - for retrieving and manipulating phonebooks 
+- requests, [fritzconnection] by Klaus Bremer aka kbr - for retrieving and manipulating phonebooks 
 - Fritz!Box with
     - enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
     - either standard or dedicated user with password (set in ```config.py```) and enough permissions
@@ -41,6 +42,11 @@ MIT
     - socket shutdown by stopping might lead to BrokenPipe exception in listener
 - CallBlocker
     - still very basic, missing: handling for failing requests, area_code determination, logging
+- Missing unit tests and a better package structure
+
+#### Alternatives
+If you search an alternative in PHP for automated call blocking, check out [fbcallrouter]. 
+This project by Volker Pueschel aka blacksenator gave me some impulses.  
     
 #### Guessed parameters for call monitor types (there is no official document?)
 If anyone knows an official document please tell me!
@@ -83,7 +89,6 @@ if anyone knows an official document please tell me!
 17.06.20 10:37:34;DISCONNECT;1;312; # Disconnect after 312 seconds of talking
 ```
 
-
 #### Fritzbox's call monitor socket at port 1012 and TCP keep-alive
 As written in the article [TCP-Keep-Alive-in-Wikipedia]: 
 _"Transmission Control Protocol (TCP) keepalives are an optional feature, and if included must default to off."_
@@ -117,6 +122,7 @@ More links - if you want to dive deeper:
 [TCP-Keep-Alive-in-Wikipedia]: https://en.wikipedia.org/wiki/Keepalive#TCP_keepalive
 [TCP-Keep-Alive-in-Python]: https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script
 [fritzconnection]: https://github.com/kbr/fritzconnection
+[fbcallrouter]: https://github.com/blacksenator/fbcallrouter
 [fc-issue-50]: https://github.com/kbr/fritzconnection/issues/50
 [fc-issue-53]: https://github.com/kbr/fritzconnection/issues/53
 [fc-issue-55]: https://github.com/kbr/fritzconnection/issues/55

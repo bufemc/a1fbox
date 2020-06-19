@@ -81,7 +81,7 @@ class CallMonitorLog(Log):
         super().__init_subclass__(**kwargs)
 
     def log_line(self, line):
-        """ Appends a raw line to the log. """
+        """ Appends a line to the log file. """
         filepath = self.get_log_filepath()
         if self.do_anon:
             line = CallMonitorLine.anonymize(line)
