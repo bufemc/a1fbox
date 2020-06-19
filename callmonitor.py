@@ -75,13 +75,15 @@ class CallMonitorLine:
 
 
 class CallMonitorLog(Log):
-    """ Call monitor lines are logged to a file. So far call monitor uses method log_line only. """
+    """ Call monitor lines are logged to a file, optionally anonymized. Use log_line as logger for callmonitor. """
 
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
+    def __init__(self, **kwargs):
+        if 'file_prefix' not in kwargs:
+            kwargs['file_prefix'] = 'callmonitor'
+        super().__init__(kwargs)
 
     def log_line(self, line):
-        """ Appends a line to the log file. """
+        """ Appends a raw call monitor line to the log file. Optionally anonymize phone numbers. """
         filepath = self.get_log_filepath()
         if self.do_anon:
             line = CallMonitorLine.anonymize(line)
@@ -199,6 +201,6 @@ class CallMonitor:
 
 if __name__ == "__main__":
     # Quick example how to use only
-    cm_log = CallMonitorLog(file_prefix="callmonitor", daily=True, anonymize=False)
+    cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(logger=cm_log.log_line)
     # cm.stop()

@@ -13,8 +13,10 @@ log = logging.getLogger(__name__)
 class CallBlockerLog(Log):
     """ Call monitor lines are logged to a file. So far call monitor uses method log_line only. """
 
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
+    def __init__(self, **kwargs):
+        if 'file_prefix' not in kwargs:
+            kwargs['file_prefix'] = 'callblocker'
+        super().__init__(kwargs)
 
     def log_line(self, line):
         """ Appends a line to the log file. """
@@ -27,21 +29,27 @@ class CallBlockerLog(Log):
 
 
 class CallBlocker:
-    def __init__(self, whitelist_pbid, blacklist_pbid, area_code, min_score=6, min_comments=3, logger=None):
+    def __init__(self, whitelist_pbid, blacklist_pbid, min_score=6, min_comments=3, logger=None):
         self.whitelist_pbid = whitelist_pbid
         self.blacklist_pbid = blacklist_pbid
-        self.area_code = area_code
         self.min_score = int(min_score)
         self.min_comments = int(min_comments)
         self.logger = logger
         self.pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
+        self.set_area_and_country_code()
         for pb_id in [self.whitelist_pbid, self.blacklist_pbid]:
             if pb_id not in self.pb.phonebook_ids:
                 raise Exception(f'The phonebook_id {pb_id} does not exist!')
         self.whitelist = self.pb.get_all_numbers(self.whitelist_pbid)  # [{Number: Name}, ..]
         self.blacklist = self.pb.get_all_numbers(self.blacklist_pbid)  # [{Number: Name}, ..]
         print(f'Call blocker initialized.. '
-              f'area_code:{area_code} whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
+              f'country_code:{self.country_code} area_code:{self.area_code} whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
+
+    def set_area_and_country_code(self):
+        res = self.pb.fc.call_action('X_VoIP', 'X_AVM-DE_GetVoIPCommonAreaCode')
+        self.area_code = res['NewX_AVM-DE_OKZPrefix'] + res['NewX_AVM-DE_OKZ']
+        res = self.pb.fc.call_action('X_VoIP', 'X_AVM-DE_GetVoIPCommonCountryCode')
+        self.country_code = res['NewX_AVM-DE_LKZPrefix'] + res['NewX_AVM-DE_LKZ']
 
     def parse_and_examine_line(self, raw_line):
         log.debug(raw_line)
@@ -75,7 +83,7 @@ class CallBlocker:
                     self.logger(f'BLACKLISTED:{number}')
                 return
 
-            # 3. Get ratio for full_number
+            # 3. Get ratio for full_number, deserves maybe an extra method rate_number
             # https://blog.tellows.de/2011/07/tellows-api-fur-die-integration-in-eigene-programme/
             url = f'http://www.tellows.de/basic/num/{full_number}?json=1&partner=test&apikey=test123'
             # ToDo: failed requests, blocked, json malformed..
@@ -104,13 +112,8 @@ class CallBlocker:
 
 if __name__ == "__main__":
     # Quick example how to use only
-
-    # Area code could maybe be retrieved via Telefonie->Eigene Rufnummern->Anschlusseinstellungen
-    # X_AVM-DE_GetVoIPCommonAreaCode (x_voip)
-
-    cb_log = CallBlockerLog(file_prefix="callblocker", daily=True, anonymize=False)
-    cb = CallBlocker(whitelist_pbid=0, blacklist_pbid=2, area_code='07191',
-                     min_score=6, min_comments=3, logger=cb_log.log_line)
+    cb_log = CallBlockerLog(daily=True, anonymize=False)
+    cb = CallBlocker(whitelist_pbid=0, blacklist_pbid=2, min_score=6, min_comments=3, logger=cb_log.log_line)
     cm_log = CallMonitorLog(file_prefix="callmonitor", daily=True, anonymize=False)
     cm = CallMonitor(logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 
@@ -118,4 +121,4 @@ if __name__ == "__main__":
     # test_line = '17.06.20 10:28:29;RING;0;0781968053101;69xxx;SIP0;'
     # cb.parse_and_examine_line(test_line)
 
-    # Ideas: reverse search?
+    # Ideas: reverse search via dasoertliche?
