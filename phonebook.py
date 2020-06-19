@@ -65,7 +65,7 @@ class Phonebook(FritzPhonebook):
 
         return self.fc.call_action('X_AVM-DE_OnTel:1', 'SetPhonebookEntry', arguments=arg)
 
-    # Ideas: reverse search?
+    # Ideas: reverse search? Import/export contacts from/to json? Edit an entry: set_contact by contact.uniqueid
 
 
 if __name__ == "__main__":

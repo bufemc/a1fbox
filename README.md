@@ -1,6 +1,6 @@
 # Airport1 Fritzbox Tools
 
-Fritz!Box tool set by [Airport1], e.g. parsing the call monitor, later also adding phone entries to phonebook etc.
+Fritz!Box tool set by [Airport1], e.g. connect and parse the call monitor, phonebook handling, call blocking.
 
 ### Ingredients
 - CallMonitor: connect and listen to call monitor on port 1012 of the Fritzbox
@@ -12,7 +12,7 @@ Fritz!Box tool set by [Airport1], e.g. parsing the call monitor, later also addi
     - Add contact to phonebook, see [fc-issue-50]    
 
 - CallBlocker: _EXPERIMENTAL_
-    - Listen to callmonitor and check RING events for cold calls
+    - Listen to call monitor and check RING events for cold calls
     - Add bad numbers to a specific phonebook for cold calls only
     
 ### Setup
@@ -22,12 +22,15 @@ Fritz!Box settings (hint: you can also set ```"fritz.box"``` instead of an IP).
 For an example implementation you could try to run ``` python example.py ```.
 
 ### Requirements
-- Python >= v.3.6 - as e.g. f'Hello, {name}!' is used
-- Fritz!Box - with enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
-- Later: [fritzconnection] >= v.{to_be_determined} - for retrieving and manipulating phonebooks 
+- Python >= 3.6 - as e.g. f'Hello, {name}!' is used
+- [fritzconnection] - for retrieving and manipulating phonebooks 
+- Fritz!Box with
+    - enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
+    - either standard or dedicated user with password (set in ```config.py```) and enough permissions
+    - an additional phonebook for cold calls, configured to block incoming numbers
 
 ### License
-Not determined yet
+MIT
 
 
 ### Backstage

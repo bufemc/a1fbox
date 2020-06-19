@@ -11,6 +11,8 @@ from datetime import datetime
 from enum import Enum
 
 from config import FRITZ_IP_ADDRESS
+from utils import anonymize_number
+from log import Log
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
@@ -30,19 +32,19 @@ class CallMonitorLine:
 
     @staticmethod
     def anonymize(raw_line):
-        """ Replaces last 3 chars of phone numbers with xxx. Nothing to do for the disconnect event. """
+        """ Replace last 3 chars of phone numbers with xxx. Nothing to do for the disconnect event. """
         params = raw_line.strip().split(';', 7)
         type = params[1]
         if type == CallMonitorType.DISCONNECT.value:
             return raw_line
         elif type == CallMonitorType.CONNECT.value:
-            params[4] = params[4][:-3] + "xxx"
+            params[4] = anonymize_number(params[4])
         elif type == CallMonitorType.RING.value:
-            params[3] = params[3][:-3] + "xxx"
-            params[4] = params[4][:-3] + "xxx"
+            params[3] = anonymize_number(params[3])
+            params[4] = anonymize_number(params[4])
         elif type == CallMonitorType.CALL.value:
-            params[4] = params[4][:-3] + "xxx"
-            params[5] = params[5][:-3] + "xxx"
+            params[4] = anonymize_number(params[4])
+            params[5] = anonymize_number(params[5])
         return ';'.join(params) + "\n"
 
     def __init__(self, raw_line):
@@ -72,46 +74,33 @@ class CallMonitorLine:
         return switcher.get(self.type, 'NOT IMPLEMENTED CALL TYPE {}'.format(self.type))
 
 
-class CallMonitorLog:
+class CallMonitorLog(Log):
     """ Call monitor lines are logged to a file. So far call monitor uses method log_line only. """
 
-    def __init__(self, file_prefix="callmonitor", log_folder=None, daily=False, anonymize=False):
-        """ Where to log the call monitor lines, optionally file for each day or phone numbers anonymized. """
-        self.do_daily = daily
-        self.do_anon = anonymize
-        self.file_prefix = file_prefix
-        if log_folder:
-            self.log_folder = log_folder
-        else:
-            self.log_folder = os.path.join(os.path.dirname(__file__), "log")
-        os.makedirs(self.log_folder, exist_ok=True)
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
 
-    def get_log_filepath(self):
-        """ Build the file path, one log or daily log. """
-        if self.do_daily:
-            dt = datetime.today().strftime('%Y%m%d')
-            return os.path.join(self.log_folder, f'{self.file_prefix}-{dt}.log')
-        else:
-            return os.path.join(self.log_folder, f'{self.file_prefix}.log')
-
-    def log_line(self, raw_line):
+    def log_line(self, line):
         """ Appends a raw line to the log. """
-        filepath = self.get_log_filepath()
+        filepath = self.get_log_filepath(self.log_folder, self.file_prefix, self.do_daily)
         if self.do_anon:
-            raw_line = CallMonitorLine.anonymize(raw_line)
+            line = CallMonitorLine.anonymize(raw_line)
         with open(filepath, "a", encoding='utf-8') as f:
-            f.write(raw_line)
+            f.write(line)
 
     def parse_from_file(self, raw_file_path, print_raw=False, anonymize=False):
         """ Read from raw file and parse each line. For unit tests OR EVEN INJECTION (instead of socket) later. """
         with open(raw_file_path, "r", encoding='utf-8') as f:
             for line in f.readlines():
+                # Remove comments
                 hash_pos = line.find('#')
                 if hash_pos != -1:
                     line = line[:hash_pos]
+                # Remove new lines, skip empty lines
                 line = line.strip()
-                if not line:  # Skip empty lines
+                if not line:
                     continue
+                # Re-append previously stripped new line
                 line += "\n"
                 if anonymize:
                     CallMonitorLine.anonymize(line)
@@ -143,8 +132,8 @@ class CallMonitor:
         parsed_line = CallMonitorLine(raw_line)
         print(parsed_line)
 
-    def connect_socket(self):
-        """ Socket has to be keep-alive, otherwise call monitor from Fritzbox stops reporting after some time. """
+    def connect_tcp_keep_alive_socket(self):
+        """ Socket has to use tcp keep-alive, otherwise call monitor from Fritzbox stops reporting after some time. """
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # See: https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script
         keep_alive_sec = 10
@@ -172,7 +161,7 @@ class CallMonitor:
         """ Starts the socket connection and the listener thread. """
         try:
             msg = "Call monitor connection {h}:{p} ".format(h=self.host, p=self.port)
-            self.connect_socket()
+            self.connect_tcp_keep_alive_socket()
             log.info(msg + "established..")
             self.thread = threading.Thread(target=self.listen_thread)
             self.thread.start()
@@ -199,7 +188,7 @@ class CallMonitor:
         while (self.active):
             if (self.socket._closed):
                 log.warning("Socket closed - reconnecting..")
-                self.connect_socket()
+                self.connect_tcp_keep_alive_socket()
             with contextlib.closing(self.socket.makefile()) as file:
                 line_generator = (line for line in file if self.active and file)
                 for raw_line in line_generator:
@@ -210,6 +199,6 @@ class CallMonitor:
 
 if __name__ == "__main__":
     # Quick example how to use only
-    cm_log = CallMonitorLog(daily=True, anonymize=False)
+    cm_log = CallMonitorLog(file_prefix="callmonitor", daily=True, anonymize=False)
     cm = CallMonitor(logger=cm_log.log_line)
     # cm.stop()
