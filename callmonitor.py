@@ -82,9 +82,9 @@ class CallMonitorLog(Log):
 
     def log_line(self, line):
         """ Appends a raw line to the log. """
-        filepath = self.get_log_filepath(self.log_folder, self.file_prefix, self.do_daily)
+        filepath = self.get_log_filepath()
         if self.do_anon:
-            line = CallMonitorLine.anonymize(raw_line)
+            line = CallMonitorLine.anonymize(line)
         with open(filepath, "a", encoding='utf-8') as f:
             f.write(line)
 
