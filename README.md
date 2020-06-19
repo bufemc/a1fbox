@@ -47,6 +47,16 @@ MIT
 #### Alternatives
 If you search an alternative in PHP for automated call blocking, check out [fbcallrouter]. 
 This project by Volker Pueschel aka blacksenator gave me some impulses.  
+
+#### Data folder: ONB
+
+Like previous mentioned project, this uses _ONB_ = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen) aka local area codes. 
+The list used is from the "BNetzA" (German "Bundesnetzagentur") and should be valid for a limited period of time. 
+If you want to update them, then download the offered CSV file (see link titled "Vorwahlverzeichnis")
+from [BNetzA-ONB]. Unpack the archive (there can be an archive in the archive, unpack also this) 
+and save the file, but renamed to ```onb.csv```, in the ./data directory.
+
+ONB file provided here, was originally named: NVONB.INTERNET.20200610.ONB 
     
 #### Guessed parameters for call monitor types (there is no official document?)
 If anyone knows an official document please tell me!
@@ -126,3 +136,4 @@ More links - if you want to dive deeper:
 [fc-issue-50]: https://github.com/kbr/fritzconnection/issues/50
 [fc-issue-53]: https://github.com/kbr/fritzconnection/issues/53
 [fc-issue-55]: https://github.com/kbr/fritzconnection/issues/55
+[BNetzA-ONB]: https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html

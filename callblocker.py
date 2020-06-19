@@ -1,5 +1,6 @@
 import logging
 
+import csv
 import requests
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
@@ -34,20 +35,44 @@ class CallBlocker:
         self.min_comments = int(min_comments)
         self.logger = logger
         self.pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
+        self.onb_dict = dict()
+        self.init_onb()
         self.set_area_and_country_code()
         for pb_id in [self.whitelist_pbid, self.blacklist_pbid]:
             if pb_id not in self.pb.phonebook_ids:
                 raise Exception(f'The phonebook_id {pb_id} does not exist!')
         self.whitelist = self.pb.get_all_numbers(self.whitelist_pbid)  # [{Number: Name}, ..]
         self.blacklist = self.pb.get_all_numbers(self.blacklist_pbid)  # [{Number: Name}, ..]
+        area_name = self.area['name'] if self.area else 'UNKNOWN'
         print(f'Call blocker initialized.. '
-              f'country_code:{self.country_code} area_code:{self.area_code} whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
+              f'country_code:{self.country_code} area_code:{self.area_code} area_name:{area_name} '
+              f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
 
     def set_area_and_country_code(self):
         res = self.pb.fc.call_action('X_VoIP', 'X_AVM-DE_GetVoIPCommonAreaCode')
         self.area_code = res['NewX_AVM-DE_OKZPrefix'] + res['NewX_AVM-DE_OKZ']
         res = self.pb.fc.call_action('X_VoIP', 'X_AVM-DE_GetVoIPCommonCountryCode')
         self.country_code = res['NewX_AVM-DE_LKZPrefix'] + res['NewX_AVM-DE_LKZ']
+        self.area = self.onb_dict[self.area_code] if self.area_code in self.onb_dict else None
+
+    def init_onb(self):
+        with open('./data/onb.csv', encoding='utf-8') as csvfile:
+            line_nr = 0
+            csvreader = csv.reader(csvfile, delimiter=';')
+            for row in csvreader:
+                if line_nr == 0:
+                    # This is for prevention only, if the order is changed it will fail here intentionally
+                    assert (row[0] == 'Ortsnetzkennzahl')
+                    assert (row[1] == 'Ortsnetzname')
+                    assert (row[2] == 'KennzeichenAktiv')
+                    line_nr += 1
+                    continue
+                if len(row) == 3:  # Last line is ['\x1a']
+                    area_code = '0' + row[0]
+                    name = row[1]
+                    active = True if row[2] == '1' else False
+                    self.onb_dict[area_code] = {'code': area_code, 'name': name, 'active': active}
+                line_nr += 1
 
     def parse_and_examine_line(self, raw_line):
         log.debug(raw_line)
