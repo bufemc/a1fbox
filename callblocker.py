@@ -13,10 +13,8 @@ log = logging.getLogger(__name__)
 class CallBlockerLog(Log):
     """ Call monitor lines are logged to a file. So far call monitor uses method log_line only. """
 
-    def __init__(self, **kwargs):
-        if 'file_prefix' not in kwargs:
-            kwargs['file_prefix'] = 'callblocker'
-        super().__init__(kwargs)
+    def __init__(self, file_prefix="callblocker", log_folder=None, daily=False, anonymize=False):
+        super().__init__(file_prefix, log_folder, daily, anonymize)
 
     def log_line(self, line):
         """ Appends a line to the log file. """
@@ -25,7 +23,7 @@ class CallBlockerLog(Log):
             # Not implemented yet
             pass
         with open(filepath, "a", encoding='utf-8') as f:
-            f.write(line)
+            f.write(line + "\n")
 
 
 class CallBlocker:
