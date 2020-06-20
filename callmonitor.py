@@ -183,15 +183,26 @@ class CallMonitor:
         print("Call monitor listening started..")
         self.active = True
         while (self.active):
-            if (self.socket._closed):
-                log.warning("Socket closed - reconnecting..")
-                self.connect_tcp_keep_alive_socket()
-            with contextlib.closing(self.socket.makefile()) as file:
-                line_generator = (line for line in file if self.active and file)
-                for raw_line in line_generator:
-                    self.parser(raw_line)
-                    if self.logger:
-                        self.logger(raw_line)
+            try:
+                if (not self.socket or self.socket._closed):
+                    log.warning("Socket closed - reconnecting..")
+                    self.connect_tcp_keep_alive_socket()
+                    # Strange: socket is reconnected even if network cable is still unplugged,
+                    # but call monitor continues to work after plugin, a miracle?
+                    if self.socket:
+                        print("Socket reconnected..")
+                with contextlib.closing(self.socket.makefile()) as file:
+                    line_generator = (line for line in file if self.active and file)
+                    for raw_line in line_generator:
+                        self.parser(raw_line)
+                        if self.logger:
+                            self.logger(raw_line)
+            # socket.py L668: handling errorTab[10051] = "Network is unreachable."
+            except OSError as e:
+                log.warning(e)
+                print("Network unreachable, trying to reconnect..")
+                self.socket = None
+                time.sleep(1)
 
 
 if __name__ == "__main__":
