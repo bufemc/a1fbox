@@ -18,7 +18,7 @@ class CallBlockerLog(Log):
         super().__init__(file_prefix, log_folder, daily, anonymize)
 
     def log_line(self, line):
-        """ Appends a line to the log file. """
+        """ Append a line to the log file. """
         filepath = self.get_log_filepath()
         if self.do_anon:
             # Not implemented yet
@@ -30,10 +30,11 @@ class CallBlockerLog(Log):
 class CallBlocker:
     """ Parse call monitor, examine RING event's phone number. """
 
-    def __init__(self, whitelist_pbid, blacklist_pbid, min_score=6, min_comments=3, logger=None):
+    def __init__(self, whitelist_pbids, blacklist_pbids, blocklist_pbid, min_score=6, min_comments=3, logger=None):
         """ Provide a whitelist phonebook (normally first index 0) and where blocked numbers should go into. """
-        self.whitelist_pbid = whitelist_pbid
-        self.blacklist_pbid = blacklist_pbid
+        self.whitelist_pbids = whitelist_pbids
+        self.blacklist_pbids = blacklist_pbids
+        self.blocklist_pbid = blocklist_pbid
         self.min_score = int(min_score)
         self.min_comments = int(min_comments)
         self.logger = logger
@@ -41,15 +42,22 @@ class CallBlocker:
         self.onb_dict = dict()
         self.init_onb()
         self.set_area_and_country_code()
-        for pb_id in [self.whitelist_pbid, self.blacklist_pbid]:
+        for pb_id in self.whitelist_pbids + self.blacklist_pbids + [self.blocklist_pbid]:
             if pb_id not in self.pb.phonebook_ids:
                 raise Exception(f'The phonebook_id {pb_id} does not exist!')
-        self.whitelist = self.pb.get_all_numbers(self.whitelist_pbid)  # [{Number: Name}, ..]
-        self.blacklist = self.pb.get_all_numbers(self.blacklist_pbid)  # [{Number: Name}, ..]
+        self.whitelist = self.get_number_name_dict_for_pb_ids(self.whitelist_pbids)
+        self.blacklist = self.get_number_name_dict_for_pb_ids(self.blacklist_pbids)
         area_name = self.area['name'] if self.area else 'UNKNOWN'
         print(f'Call blocker initialized.. '
               f'country_code:{self.country_code} area_code:{self.area_code} area_name:{area_name} '
               f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
+
+    def get_number_name_dict_for_pb_ids(self, pb_ids):
+        """ Retrieve and concatenate number-name-dicts for several phonebook ids. """
+        number_name_dict = dict()
+        for pb_id in pb_ids:
+            number_name_dict.update(self.pb.get_all_numbers(pb_id))  # [{Number: Name}, ..]
+        return number_name_dict
 
     def set_area_and_country_code(self):
         """ Retrieve area and country code via the Fritzbox. """
@@ -130,7 +138,7 @@ class CallBlocker:
             if score >= self.min_score and comment_count >= self.min_comments:
                 # ToDo: try to build a smarter name, e.g. add first callerTypes":{"caller":[{"name" .. if != Unbekannt
                 name = f'CallBlock {location} ({searches})'
-                result = self.pb.add_contact(self.blacklist_pbid, name, full_number)
+                result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
                 if result:
                     print(result)
                 # ToDo: log blocking
@@ -138,13 +146,15 @@ class CallBlocker:
                 if self.logger:
                     self.logger(f'BLOCKED:{number};name:{name};score:{score};comments:{comment_count};')
 
-    # Ideas: reverse search via dasoertliche? Is there an API?
+    # Ideas: reverse search via dasoertliche? Is there an API? Seems no, maybe a case for beautifulsoup
+    # https://www.dasoertliche.de/Controller?form_name=search_inv&ph=07191952xxx
 
 
 if __name__ == "__main__":
     # Quick example how to use only
     cb_log = CallBlockerLog(daily=True, anonymize=False)
-    cb = CallBlocker(whitelist_pbid=0, blacklist_pbid=2, min_score=6, min_comments=3, logger=cb_log.log_line)
+    cb = CallBlocker(whitelist_pbids=[0], blacklist_pbids=[1,2], blocklist_pbid=2,
+                     min_score=6, min_comments=3, logger=cb_log.log_line)
     cm_log = CallMonitorLog(file_prefix="callmonitor", daily=True, anonymize=False)
     cm = CallMonitor(logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 

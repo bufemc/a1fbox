@@ -146,7 +146,6 @@ class CallMonitor:
             TCP_KEEPALIVE = 0x10
             self.socket.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, interval_sec)
         elif op_sys == 'Linux':
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, after_idle_sec)
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval_sec)
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)

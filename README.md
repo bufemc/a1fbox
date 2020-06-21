@@ -11,7 +11,7 @@ Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handlin
     - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55] 
     - Add contact to phonebook, see [fc-issue-50]    
 
-- CallBlocker: _EXPERIMENTAL_
+- CallBlocker: _EXPERIMENTAL_ (WIP, "API" is not final)
     - Listen to call monitor and check RING events for cold calls 
     - Add bad numbers to a specific phonebook for cold calls only
     
