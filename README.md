@@ -6,14 +6,14 @@ Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handlin
 - CallMonitor: connect and listen to call monitor on port 1012 of the Fritzbox
     - CallMonitorLine: line parser and phone number anonymizer
     - CallMonitorLog: optional logger for lines, either one big file or daily files
+
+- CallBlocker: _EXPERIMENTAL_ (WIP, "API" is not final) - listen to call monitor and check RING events 
+    - CallerInfo: Rate and examine a phone number (e.g. do scoring or reverse search)
+    - CallBlockerLog: optional logger for actions, either one big file or daily files
     
 - Phonebook: inherited and extended from [fritzconnection]'s FritzPhonebook
     - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55] 
     - Add contact to phonebook, see [fc-issue-50]    
-
-- CallBlocker: _EXPERIMENTAL_ (WIP, "API" is not final)
-    - Listen to call monitor and check RING events for cold calls 
-    - Add bad numbers to a specific phonebook for cold calls only
     
 ### Setup
 

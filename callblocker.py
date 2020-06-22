@@ -31,15 +31,19 @@ class CallBlockerLog(Log):
 class CallerInfo:
     """ Retrieve details for a phone number. Currently scoring via Tellows. Could get score from a dict (caching). """
 
-    def __init__(self, number):
+    def __init__(self, number, autorate=True, autorevsearch=False):
+        """ Might enrich information about a phone number. Caches not used yet. RevSearch not implemented yet. """
         self.number = number
-        self.get_tellows_score()
+        if autorate:
+            self.get_tellows_score()
+        if autorevsearch:
+            self.get_revsearch_info()
 
     def get_tellows_score(self):
         """ Do scoring for a phone number via Tellows.
         https://blog.tellows.de/2011/07/tellows-api-fur-die-integration-in-eigene-programme/ """
         url = f'http://www.tellows.de/basic/num/{self.number}?json=1&partner=test&apikey=test123'
-        # ToDo: failed requests, blocked, json malformed..
+        # ToDo: failed requests, blocked, json malformed.. caching?
         req = requests.get(url)
         obj = req.json()['tellows']
 
@@ -59,8 +63,8 @@ class CallerInfo:
                     break
         self.name = f'{caller_name}{self.location}'
 
-    def get_reverse_search_info(self):
-        """ Could do reverse search by DasOertliche by use of beautifulsoup4.
+    def get_revsearch_info(self):
+        """ Could do reverse search by DasOertliche by using e.g. beautifulsoup4.
         https://www.dasoertliche.de/Controller?form_name=search_inv&ph=07191952xxx """
         pass
 
@@ -68,12 +72,13 @@ class CallerInfo:
 class CallBlocker:
     """ Parse call monitor, examine RING event's phone number. """
 
-    def __init__(self, whitelist_pbids, blacklist_pbids, blocklist_pbid,
+    def __init__(self, whitelist_pbids, blacklist_pbids, blocklist_pbid, blockname_prefix='',
                  min_score=6, min_comments=3, logger=None):
         """ Provide a whitelist phonebook (normally first index 0) and where blocked numbers should go into. """
         self.whitelist_pbids = whitelist_pbids
         self.blacklist_pbids = blacklist_pbids
         self.blocklist_pbid = blocklist_pbid
+        self.blockname_prefix = blockname_prefix
         self.min_score = int(min_score)
         self.min_comments = int(min_comments)
         self.logger = logger
@@ -151,6 +156,7 @@ class CallBlocker:
 
             # 1. Is either full number 071..123... or short number 123... in the whitelist?
             if number in self.whitelist.keys() or number_variant in self.whitelist.keys():
+                # Could/should extract/print the name? Anon?
                 log_str = f'{dt};WHITELISTED:{full_number};'
                 log.debug(log_str)
                 print(log_str)
@@ -160,6 +166,7 @@ class CallBlocker:
 
             # 2. Already in blacklist? Unsure, if short numbers can happen here, too?
             if number in self.blacklist.keys() or number_variant in self.blacklist.keys():
+                # Could/should extract/print the name? Anon?
                 log_str = f'{dt};BLACKLISTED:{full_number};'
                 log.debug(log_str)
                 print(log_str)
@@ -173,7 +180,7 @@ class CallBlocker:
 
             # 4. Block if bad ratio
             if ci.score >= self.min_score and ci.comment_count >= self.min_comments:
-                name = "[CallBlocker] " + ci.name
+                name = self.blockname_prefix + ci.name
                 result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
                 if result:  # If not {} returned, it's an error
                     print(result)
@@ -189,9 +196,12 @@ class CallBlocker:
 
 if __name__ == "__main__":
     # Quick example how to use only
+    # There are two loggers. cm_log logs the raw line from call monitor of Fritzbox,
+    # cb_log logs the actions of the call blocker. The CallMonitor uses the
+    # CallBlocker and it's parse_and_examine_line method to examine the raw line.
     cb_log = CallBlockerLog(daily=True, anonymize=False)
     cb = CallBlocker(whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2,
-                     min_score=6, min_comments=3, logger=cb_log.log_line)
+                     blockname_prefix='[Spam] ', min_score=6, min_comments=3, logger=cb_log.log_line)
     cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 
@@ -199,7 +209,6 @@ if __name__ == "__main__":
     # test_line = '17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0;'
     # cb.parse_and_examine_line(test_line)
     # Provoke blacklist test
-    # test_line = '17.06.20 10:28:29;RING;0;0781968053101;69xxx;SIP0;'
+    # test_line = '17.06.20 10:28:29;RING;0;07819680531;69xxx;SIP0;'
     # cb.parse_and_examine_line(test_line)
-
     # cm.stop()
