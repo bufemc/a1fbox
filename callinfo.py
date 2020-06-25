@@ -45,7 +45,6 @@ class CallInfo:
     def get_revsearch_info(self):
         """ Do reverse search via DasOertliche, currently ugly parsing, which might fail if name has commas? """
         url = f'https://www.dasoertliche.de/Controller?form_name=search_inv&ph={self.number}'
-        req = requests.get(url)
         try:
             req = requests.get(url)
             req.raise_for_status()
