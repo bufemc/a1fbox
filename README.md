@@ -8,7 +8,8 @@ Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handlin
     - CallMonitorLog: optional logger for lines, either one big file or daily files
 
 - CallBlocker: _EXPERIMENTAL_ (WIP, "API" is not final) - listen to call monitor and check RING events 
-    - CallerInfo: Rate and examine a phone number (e.g. do scoring or reverse search)
+    - CallBlockerInfo: Examine a phone number (e.g. do scoring or reverse search)
+    - CallBlockerLine: line parser and phone number/name anonymizer
     - CallBlockerLog: optional logger for actions, either one big file or daily files
     
 - Phonebook: inherited and extended from [fritzconnection]'s FritzPhonebook
@@ -29,6 +30,12 @@ For an example implementation you could try to run ``` python example.py ```.
     - enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
     - either standard or dedicated user with password (set in ```config.py```) and enough permissions
     - an additional phonebook for cold calls, configured to block incoming numbers
+
+### Description
+Idea was to create a call blocker for cold calls. I tried to build modules that were as independent as possible,
+having same naming, even same logging scheme. So they could be used as building blocks, combined in different ways.
+So you could run the call monitor alone, but also combined with the call blocker. Or you could just do rating for
+phone numbers or reverse search. Or add contacts to your phonebook. Feedback is highly appreciated.
 
 ### License
 MIT
@@ -132,16 +139,13 @@ More links - if you want to dive deeper:
 
 ToDo and/or further planning (pb = phonebook):
 - Unit tests
-- Injection of numbers to or instead of call monitor for: whitelist, blacklist, to be blocked, to pass
-- Method to retrieve last (400 max?) phone numbers and examine/rate them (BUT, by using a cache!) [except if in pbs?]
-- To do so generalize the rating or revsearch methods?
-- Retrieve and log also white- and blacklisted phone numbers with full name [from pb or revsearch?]
-- Introduce more anonymity levels, like: print full numbers in that case, none, only in few cases, or anonymize
-- Log [blocked?] calls to telegram channel via a bot? Add how to set up a bot to README (BotFather..)
-- Implement reverse search
+- Injection of numbers to or instead of call monitor (mockup?) for: whitelist, blacklist, block, pass
+- Check possibility to merge/generalize CallBlockerInfo and CallBlockerLine - e.g. by inheritance classA(classB)
+- Method to retrieve last (400 max?) phone numbers and examine/rate them (BUT, by using a cache!) (except if in pbs?)
+- Log (blocked only?) calls to telegram channel via a bot?
 - Add update (+ delete?) contact method e.g. to improve entries to provide better names
 - Replace phonebook contacts with missing local area code with full numbers
-- Documentation: how to set up for a Raspberry Pi, e.g. as a service
+- Documentation: how to set up for a Raspberry Pi, e.g. as a service, how to set up a bot for telegram channel..
 
 
 [Airport1]: https://www.airport1.de/
