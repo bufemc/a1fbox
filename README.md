@@ -7,8 +7,9 @@ Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handlin
     - CallMonitorLine: line parser and phone number anonymizer
     - CallMonitorLog: optional logger for lines, either one big file or daily files
 
+- CallInfo: examine a phone number (e.g. do scoring or reverse search)
+
 - CallBlocker: _EXPERIMENTAL_ (WIP, "API" is not final) - listen to call monitor and check RING events 
-    - CallBlockerInfo: Examine a phone number (e.g. do scoring or reverse search)
     - CallBlockerLine: line parser and phone number/name anonymizer
     - CallBlockerLog: optional logger for actions, either one big file or daily files
     
