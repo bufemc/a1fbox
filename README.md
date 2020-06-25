@@ -128,6 +128,22 @@ More links - if you want to dive deeper:
 - https://stackoverflow.com/questions/35861484/how-to-know-the-if-the-socket-connection-is-closed-in-python
 - https://tewarid.github.io/2013/08/16/handling-tcp-keep-alive.html
 
+#### Planning
+
+ToDo and/or further planning (pb = phonebook):
+- Unit tests
+- Injection of numbers to or instead of call monitor for: whitelist, blacklist, to be blocked, to pass
+- Method to retrieve last (400 max?) phone numbers and examine/rate them (BUT, by using a cache!) [except if in pbs?]
+- To do so generalize the rating or revsearch methods?
+- Retrieve and log also white- and blacklisted phone numbers with full name [from pb or revsearch?]
+- Introduce more anonymity levels, like: print full numbers in that case, none, only in few cases, or anonymize
+- Log [blocked?] calls to telegram channel via a bot? Add how to set up a bot to README (BotFather..)
+- Implement reverse search
+- Add update (+ delete?) contact method e.g. to improve entries to provide better names
+- Replace phonebook contacts with missing local area code with full numbers
+- Documentation: how to set up for a Raspberry Pi, e.g. as a service
+
+
 [Airport1]: https://www.airport1.de/
 [TCP-Keep-Alive-in-Wikipedia]: https://en.wikipedia.org/wiki/Keepalive#TCP_keepalive
 [TCP-Keep-Alive-in-Python]: https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script

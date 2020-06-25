@@ -1,19 +1,63 @@
 import csv
 import logging
-from datetime import datetime
+from enum import Enum
 
 import requests
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from log import Log
 from phonebook import Phonebook
+from utils import anonymize_number
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
 
 
+class CallBlockerRate(Enum):
+    """ Custom blocker rates. Not used yet, as method is sufficient for the method to distinguish rated entries. """
+
+    WHITELIST = "WHITELIST"
+    BLACKLIST = "BLACKLIST"
+    BLOCK = "BLOCK"
+    PASS = "PASS"
+
+
+class CallBlockerLine:
+    """ Parse or anonymize a line from call blocker, parameters are separated by ';' finished by a newline '\n'. """
+
+    @staticmethod
+    def anonymize(raw_line):
+        """ Replace last 3 chars of phone numbers with xxx. Overwrite Name. """
+        params = raw_line.strip().split(';')
+        params[3] = anonymize_number(params[3])
+        params[4] = '"Anonymized"'
+        return ';'.join(params) + "\n"
+
+    def __init__(self, raw_line):
+        """ A line from call blocker has min. 5 and ATM max. 8 parameters, but the order is constant.
+        Trying to use same style logging like call monitor: date time; type;
+        method_used (0=none, bit0=1=tellows, bit1=2=revsearch); full_number; name; score; comments(; searches;).
+        Type is renamed to rate intentionally to distinguish both easily. """
+        self.score, self.comments, self.searches = None, None, None
+        self.datetime, self.rate, self.method, self.caller, self.name, *more = raw_line.strip().split(';', 8)
+        self.name = self.name.strip('"')  # "ab"cd" => ab"cd
+        self.date, self.time = self.datetime.split(' ')
+        if int(self.method) == 1:  # Rating by Tellows
+            self.score, self.comments, self.searches = more[0], more[1], more[2]
+        if int(self.method) == 2:  # Reverse search
+            raise NotImplementedError
+
+    def __str__(self):
+        """ Pretty print a line from call blocker (ignoring method), by considering the method. """
+        start = f'date:{self.date} time:{self.time} rate:{self.rate} caller:{self.caller} name:{self.name}'
+        if int(self.method) == 1:
+            return f'{start} score:{self.score} comments:{self.comments} searches:{self.searches}'
+        else:
+            return start
+
+
 class CallBlockerLog(Log):
-    """ Call monitor lines are logged to a file. So far call monitor uses method log_line only. """
+    """ Call blocker lines are logged to a file. So far call blocker uses method log_line only. """
 
     def __init__(self, file_prefix="callblocker", log_folder=None, daily=False, anonymize=False):
         super().__init__(file_prefix, log_folder, daily, anonymize)
@@ -22,22 +66,17 @@ class CallBlockerLog(Log):
         """ Append a line to the log file. """
         filepath = self.get_log_filepath()
         if self.do_anon:
-            # Not implemented yet
-            pass
+            line = CallBlockerLine.anonymize(line)
         with open(filepath, "a", encoding='utf-8') as f:
-            f.write(line + "\n")
+            f.write(line)
 
 
-class CallerInfo:
+class CallInfo:
     """ Retrieve details for a phone number. Currently scoring via Tellows. Could get score from a dict (caching). """
 
-    def __init__(self, number, autorate=True, autorevsearch=False):
+    def __init__(self, number):
         """ Might enrich information about a phone number. Caches not used yet. RevSearch not implemented yet. """
         self.number = number
-        if autorate:
-            self.get_tellows_score()
-        if autorevsearch:
-            self.get_revsearch_info()
 
     def get_tellows_score(self):
         """ Do scoring for a phone number via Tellows.
@@ -66,7 +105,7 @@ class CallerInfo:
     def get_revsearch_info(self):
         """ Could do reverse search by DasOertliche by using e.g. beautifulsoup4.
         https://www.dasoertliche.de/Controller?form_name=search_inv&ph=07191952xxx """
-        pass
+        raise NotImplementedError
 
 
 class CallBlocker:
@@ -132,6 +171,13 @@ class CallBlocker:
                     self.onb_dict[area_code] = {'code': area_code, 'name': name, 'active': active}
                 line_nr += 1
 
+    def numbers_in_list(self, numbers, phonelist):
+        """ Return first name found for a list of numbers in phone list. """
+        for number in numbers:
+            if number in phonelist.keys():
+                return phonelist[number]
+        return None
+
     def parse_and_examine_line(self, raw_line):
         """ Parse call monitor line, if RING event not in lists, rate and maybe block the number. """
         log.debug(raw_line)
@@ -141,57 +187,56 @@ class CallBlocker:
         if cm_line.type == CallMonitorType.RING.value:
 
             # Simulate similar logging style to call monitor
-            dt = datetime.today().strftime('%d.%m.%y %H:%M:%S')
+            # dt = datetime.today().strftime('%d.%m.%y %H:%M:%S')
+            dt = cm_line.datetime  # Use same datetime for exact match
 
             number = cm_line.caller
-            # Number can be with area_code or without! Both variants can be in phonebook, too..
             number_variant = number  # Only used for search in whitelist or blacklist
+            # Number can be with area_code or without! Both variants can be in phonebook, too..
             if number.startswith(self.area_code):
-                number_variant = number.replace(self.area_code, '')  # Number wo AC
+                number_variant = number.replace(self.area_code, '')  # Number without area code
             if number.startswith('0'):
                 full_number = number
             else:
                 number_variant = self.area_code + number
                 full_number = number_variant
 
-            # 1. Is either full number 071..123... or short number 123... in the whitelist?
-            if number in self.whitelist.keys() or number_variant in self.whitelist.keys():
-                # Could/should extract/print the name? Anon?
-                log_str = f'{dt};WHITELISTED:{full_number};'
-                log.debug(log_str)
-                print(log_str)
-                if self.logger:
-                    self.logger(log_str)
-                return
+            # 1. Is either full number 071..123... or short number 123... in the white- or blacklist?
+            name_white = self.numbers_in_list([number, number_variant], self.whitelist)
+            name_black = self.numbers_in_list([number, number_variant], self.blacklist)
 
-            # 2. Already in blacklist? Unsure, if short numbers can happen here, too?
-            if number in self.blacklist.keys() or number_variant in self.blacklist.keys():
-                # Could/should extract/print the name? Anon?
-                log_str = f'{dt};BLACKLISTED:{full_number};'
-                log.debug(log_str)
-                print(log_str)
-                if self.logger:
-                    self.logger(log_str)
-                return
+            if name_white and name_black:
+                raise Exception(f'Problem in your phonebooks detected: '
+                                f'a number should not be on white- and blacklist. Please fix! Details: '
+                                f'whitelist:{name_white} blacklist:{name_black}')
 
-            # 3. Get ratio for full_number
-            ci = CallerInfo(full_number)
-            score_str = f'name:{ci.name};score:{ci.score};comments:{ci.comment_count};searches:{ci.searches};'
+            if name_white or name_black:
+                name = name_black if name_black else name_white  # Reason: black might win over white
+                rate = 'BLACKLIST' if name_black else 'WHITELIST'
+                raw_line = f'{dt};{rate};0;{full_number};"{name}";' + "\n"
 
-            # 4. Block if bad ratio
-            if ci.score >= self.min_score and ci.comment_count >= self.min_comments:
-                name = self.blockname_prefix + ci.name
-                result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
-                if result:  # If not {} returned, it's an error
-                    print(result)
-                action = "BLOCKED"
             else:
-                action = "PASSED"
-            log_str = f'{dt};{action}:{full_number};{score_str}'
-            log.debug(log_str)
-            print(log_str)
+                ci = CallInfo(full_number)
+                ci.get_tellows_score()
+                # Adapt to logging style of call monitor. Task of logger to parse the values to keys/names?
+                score_str = f'"{ci.name}";{ci.score};{ci.comment_count};{ci.searches};'
+
+                if ci.score >= self.min_score and ci.comment_count >= self.min_comments:
+                    name = self.blockname_prefix + ci.name
+                    result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
+                    if result:  # If not {} returned, it's an error
+                        log.warning("Adding to phonebook failed:")
+                        print(result)
+                    rate = "BLOCK"
+                else:
+                    rate = "PASS"
+                raw_line = f'{dt};{rate};1;{full_number};{score_str}' + "\n"
+
+            log.debug(raw_line)
+            parsed_line = CallBlockerLine(raw_line)
+            print(parsed_line)
             if self.logger:
-                self.logger(log_str)
+                self.logger(raw_line)
 
 
 if __name__ == "__main__":
@@ -209,6 +254,6 @@ if __name__ == "__main__":
     # test_line = '17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0;'
     # cb.parse_and_examine_line(test_line)
     # Provoke blacklist test
-    # test_line = '17.06.20 10:28:29;RING;0;07819680531;69xxx;SIP0;'
+    # test_line = '17.06.20 10:28:29;RING;0;09912568741596;69xxx;SIP0;'
     # cb.parse_and_examine_line(test_line)
     # cm.stop()
