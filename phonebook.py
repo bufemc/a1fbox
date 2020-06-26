@@ -79,6 +79,10 @@ class Phonebook(FritzPhonebook):
         """ Idea: could use contact.uniqueid to update corresponding record in Fritz!Box phonebook with pb_id. """
         raise NotImplementedError()
 
+    def delete_contact(self, pb_id, contact):
+        """ Idea: could use contact.uniqueid to delete corresponding record in Fritz!Box phonebook with pb_id. """
+        raise NotImplementedError()
+
     def import_contacts_from_json(self, pb_id, json_file, skip_existing=True):
         """ Idea: could use a json file with a list of contact dict to populate a phonebook with pb_id. """
         raise NotImplementedError()
@@ -86,6 +90,36 @@ class Phonebook(FritzPhonebook):
     def export_contacts_to_json(self, pb_id, json_file):
         """ Idea: could export a phonebook with pb_id to a json file with a list of contact dict. """
         raise NotImplementedError()
+
+    def ensure_pb_ids_valid(self, pb_ids):
+        """ Checks a list of phonebook ids. Raise if a phonebook id does not exist. """
+        for pb_id in pb_ids:
+            if pb_id not in self.phonebook_ids:
+                raise Exception(f'The phonebook_id {pb_id} does not exist!')
+
+    def get_all_numbers_for_pb_ids(self, pb_ids):
+        """ Retrieve and concatenate number-name-dicts for several phonebook ids. """
+        number_name_dict = dict()
+        for pb_id in pb_ids:
+            number_name_dict.update(self.get_all_numbers(pb_id))  # [{Number: Name}, ..]
+        return number_name_dict
+
+    def get_name_for_number_in_dict(self, number, number_name_dict, area_code=None):
+        """ Return first name found for a number_name_dict. Can also find it with/without area_code. """
+        if area_code:
+            # Try also to find an entry with or without the area_code
+            if number.startswith(area_code):
+                number_variant = number.replace(area_code, '')  # Number without area code
+            else:
+                number_variant = area_code + number  # Number with area code
+            numbers = [number, number_variant]
+        else:
+            numbers = [number]
+
+        for number in numbers:
+            if number in number_name_dict.keys():
+                return number_name_dict[number]
+        return None
 
 
 if __name__ == "__main__":
@@ -97,3 +131,5 @@ if __name__ == "__main__":
 
     # Works only if phonebook with id 2 exists and should not be executed too often
     # result = pb.add_contact(2, 'CallBlockerTest', '009912345')
+
+    # Could add a test if number with/without area_code is found in phonebook, but maybe needs a mockup/fake

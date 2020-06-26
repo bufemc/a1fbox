@@ -1,9 +1,10 @@
 import csv
 import logging
 from enum import Enum
-from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
-from callinfo import CallInfo
+
+from callinfo import CallInfo, CallInfoType
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
+from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from log import Log
 from phonebook import Phonebook
 from utils import anonymize_number
@@ -41,15 +42,15 @@ class CallBlockerLine:
         self.datetime, self.rate, self.method, self.caller, self.name, *more = raw_line.strip().split(';', 8)
         self.name = self.name.strip('"')  # "ab"cd" => ab"cd
         self.date, self.time = self.datetime.split(' ')
-        if int(self.method) == 1:  # Rating by Tellows
+        if int(self.method) == CallInfoType.TELLOWS_SCORE.value:
             self.score, self.comments, self.searches = more[0], more[1], more[2]
-        if int(self.method) == 2:  # Reverse search
+        if int(self.method) == CallInfoType.REV_SEARCH.value:
             raise NotImplementedError
 
     def __str__(self):
         """ Pretty print a line from call blocker (ignoring method), by considering the method. """
         start = f'date:{self.date} time:{self.time} rate:{self.rate} caller:{self.caller} name:{self.name}'
-        if int(self.method) == 1:
+        if int(self.method) == CallInfoType.TELLOWS_SCORE.value:
             return f'{start} score:{self.score} comments:{self.comments} searches:{self.searches}'
         else:
             return start
@@ -87,22 +88,13 @@ class CallBlocker:
         self.pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
         self.init_onb()
         self.set_area_and_country_code()
-        for pb_id in self.whitelist_pbids + self.blacklist_pbids + [self.blocklist_pbid]:
-            if pb_id not in self.pb.phonebook_ids:
-                raise Exception(f'The phonebook_id {pb_id} does not exist!')
-        self.whitelist = self.get_number_name_dict_for_pb_ids(self.whitelist_pbids)
-        self.blacklist = self.get_number_name_dict_for_pb_ids(self.blacklist_pbids)
+        self.pb.ensure_pb_ids_valid(self.whitelist_pbids + self.blacklist_pbids + [self.blocklist_pbid])
+        self.whitelist = self.pb.get_all_numbers_for_pb_ids(self.whitelist_pbids)
+        self.blacklist = self.pb.get_all_numbers_for_pb_ids(self.blacklist_pbids)
         area_name = self.area['name'] if self.area else 'UNKNOWN'
         print(f'Call blocker initialized.. '
               f'country_code:{self.country_code} area_code:{self.area_code} area_name:{area_name} '
               f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
-
-    def get_number_name_dict_for_pb_ids(self, pb_ids):
-        """ Retrieve and concatenate number-name-dicts for several phonebook ids. """
-        number_name_dict = dict()
-        for pb_id in pb_ids:
-            number_name_dict.update(self.pb.get_all_numbers(pb_id))  # [{Number: Name}, ..]
-        return number_name_dict
 
     def set_area_and_country_code(self):
         """ Retrieve area and country code via the Fritzbox. """
@@ -133,13 +125,6 @@ class CallBlocker:
                     self.onb_dict[area_code] = {'code': area_code, 'name': name, 'active': active}
                 line_nr += 1
 
-    def numbers_in_list(self, numbers, phonelist):
-        """ Return first name found for a list of numbers in phone list. """
-        for number in numbers:
-            if number in phonelist.keys():
-                return phonelist[number]
-        return None
-
     def parse_and_examine_line(self, raw_line):
         """ Parse call monitor line, if RING event not in lists, rate and maybe block the number. """
         log.debug(raw_line)
@@ -147,25 +132,17 @@ class CallBlocker:
         print(cm_line)
 
         if cm_line.type == CallMonitorType.RING.value:
-
-            # Simulate similar logging style to call monitor
-            # dt = datetime.today().strftime('%d.%m.%y %H:%M:%S')
             dt = cm_line.datetime  # Use same datetime for exact match
 
             number = cm_line.caller
-            number_variant = number  # Only used for search in whitelist or blacklist
-            # Number can be with area_code or without! Both variants can be in phonebook, too..
-            if number.startswith(self.area_code):
-                number_variant = number.replace(self.area_code, '')  # Number without area code
             if number.startswith('0'):
                 full_number = number
             else:
-                number_variant = self.area_code + number
-                full_number = number_variant
+                full_number = self.area_code + number
 
             # 1. Is either full number 071..123... or short number 123... in the white- or blacklist?
-            name_white = self.numbers_in_list([number, number_variant], self.whitelist)
-            name_black = self.numbers_in_list([number, number_variant], self.blacklist)
+            name_white = self.pb.get_name_for_number_in_dict(number, self.whitelist, area_code=self.area_code)
+            name_black = self.pb.get_name_for_number_in_dict(number, self.blacklist, area_code=self.area_code)
 
             if name_white and name_black:
                 raise Exception(f'Problem in your phonebooks detected: '
@@ -173,7 +150,7 @@ class CallBlocker:
                                 f'whitelist:{name_white} blacklist:{name_black}')
 
             if name_white or name_black:
-                name = name_black if name_black else name_white  # Reason: black might win over white
+                name = name_black if name_black else name_white  # Reason: black might win over white by blocking it
                 rate = 'BLACKLIST' if name_black else 'WHITELIST'
                 raw_line = f'{dt};{rate};0;{full_number};"{name}";' + "\n"
 
@@ -181,9 +158,9 @@ class CallBlocker:
                 ci = CallInfo(full_number)
                 ci.get_tellows_score()
                 # Adapt to logging style of call monitor. Task of logger to parse the values to keys/names?
-                score_str = f'"{ci.name}";{ci.score};{ci.comment_count};{ci.searches};'
+                score_str = f'"{ci.name}";{ci.score};{ci.comments};{ci.searches};'
 
-                if ci.score >= self.min_score and ci.comment_count >= self.min_comments:
+                if ci.score >= self.min_score and ci.comments >= self.min_comments:
                     name = self.blockname_prefix + ci.name
                     result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
                     if result:  # If not {} returned, it's an error

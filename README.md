@@ -140,6 +140,7 @@ More links - if you want to dive deeper:
 
 ToDo and/or further planning (pb = phonebook):
 - Unit tests
+- Methods init_onb and set_area_code.. should go in additional class
 - Injection of numbers to or instead of call monitor (mockup?) for: whitelist, blacklist, block, pass
 - Check possibility to merge/generalize CallBlockerInfo and CallBlockerLine - e.g. by inheritance classA(classB)
 - Method to retrieve last (400 max?) phone numbers and examine/rate them (BUT, by using a cache!) (except if in pbs?)
