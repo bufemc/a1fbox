@@ -3,6 +3,7 @@ import logging
 from enum import Enum
 
 from callinfo import CallInfo, CallInfoType
+from callprefix import CallPrefix
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from log import Log
@@ -86,44 +87,14 @@ class CallBlocker:
         self.logger = logger
         print("Retrieving data from Fritz!Box..")
         self.pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
-        self.init_onb()
-        self.set_area_and_country_code()
+        self.cp = CallPrefix(fc=self.pb.fc)
         self.pb.ensure_pb_ids_valid(self.whitelist_pbids + self.blacklist_pbids + [self.blocklist_pbid])
         self.whitelist = self.pb.get_all_numbers_for_pb_ids(self.whitelist_pbids)
         self.blacklist = self.pb.get_all_numbers_for_pb_ids(self.blacklist_pbids)
-        area_name = self.area['name'] if self.area else 'UNKNOWN'
+        area_name = self.cp.area['name'] if self.cp.area else 'UNKNOWN'
         print(f'Call blocker initialized.. '
-              f'country_code:{self.country_code} area_code:{self.area_code} area_name:{area_name} '
+              f'country_code:{self.cp.country_code} area_code:{self.cp.area_code} area_name:{area_name} '
               f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
-
-    def set_area_and_country_code(self):
-        """ Retrieve area and country code via the Fritzbox. """
-        res = self.pb.fc.call_action('X_VoIP', 'X_AVM-DE_GetVoIPCommonAreaCode')
-        self.area_code = res['NewX_AVM-DE_OKZPrefix'] + res['NewX_AVM-DE_OKZ']
-        res = self.pb.fc.call_action('X_VoIP', 'X_AVM-DE_GetVoIPCommonCountryCode')
-        self.country_code = res['NewX_AVM-DE_LKZPrefix'] + res['NewX_AVM-DE_LKZ']
-        self.area = self.onb_dict[self.area_code] if self.area_code in self.onb_dict else None
-
-    def init_onb(self):
-        """ Read the area codes into a dict. provided by BNetzA as CSV, separated by ';'. """
-        self.onb_dict = dict()
-        with open('./data/onb.csv', encoding='utf-8') as csvfile:
-            line_nr = 0
-            csvreader = csv.reader(csvfile, delimiter=';')
-            for row in csvreader:
-                if line_nr == 0:
-                    # This is for prevention only, if the order is changed it will fail here intentionally
-                    assert (row[0] == 'Ortsnetzkennzahl')
-                    assert (row[1] == 'Ortsnetzname')
-                    assert (row[2] == 'KennzeichenAktiv')
-                    line_nr += 1
-                    continue
-                if len(row) == 3:  # Last line is ['\x1a']
-                    area_code = '0' + row[0]
-                    name = row[1]
-                    active = True if row[2] == '1' else False
-                    self.onb_dict[area_code] = {'code': area_code, 'name': name, 'active': active}
-                line_nr += 1
 
     def parse_and_examine_line(self, raw_line):
         """ Parse call monitor line, if RING event not in lists, rate and maybe block the number. """
@@ -138,11 +109,11 @@ class CallBlocker:
             if number.startswith('0'):
                 full_number = number
             else:
-                full_number = self.area_code + number
+                full_number = self.cp.area_code + number
 
             # 1. Is either full number 071..123... or short number 123... in the white- or blacklist?
-            name_white = self.pb.get_name_for_number_in_dict(number, self.whitelist, area_code=self.area_code)
-            name_black = self.pb.get_name_for_number_in_dict(number, self.blacklist, area_code=self.area_code)
+            name_white = self.pb.get_name_for_number_in_dict(number, self.whitelist, area_code=self.cp.area_code)
+            name_black = self.pb.get_name_for_number_in_dict(number, self.blacklist, area_code=self.cp.area_code)
 
             if name_white and name_black:
                 raise Exception(f'Problem in your phonebooks detected: '
@@ -190,7 +161,7 @@ if __name__ == "__main__":
     cm = CallMonitor(logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 
     # Provoke whitelist test
-    # test_line = '17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0;'
+    # test_line = '17.06.20 10:28:29;RING;0;07191952010;69xxx;SIP0;'
     # cb.parse_and_examine_line(test_line)
     # Provoke blacklist test
     # test_line = '17.06.20 10:28:29;RING;0;09912568741596;69xxx;SIP0;'

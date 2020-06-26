@@ -9,6 +9,8 @@ Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handlin
 
 - CallInfo: examine a phone number (e.g. do scoring or reverse search)
 
+- CallPrefix: provides area code (e.g. 07191 for Backnang), country code (e.g. 0049 for Germany) and ONB from BNetzA.
+
 - CallBlocker: _EXPERIMENTAL_ (WIP, "API" is not final) - listen to call monitor and check RING events 
     - CallBlockerLine: line parser and phone number/name anonymizer
     - CallBlockerLog: optional logger for actions, either one big file or daily files
