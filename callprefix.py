@@ -15,7 +15,7 @@ class CallPrefixType(Enum):
     COUNTRY = 99
 
 
-#class CallPrefix:
+# class CallPrefix:
 #    """ Should a call prefix be an instance of this instead, the other class be renamed to e.g. CallPrefixManager? """
 
 
@@ -68,8 +68,7 @@ class CallPrefix:
                     name = row[1]
                     self.prefix_dict[area_code] = {'code': area_code, 'name': name, 'active': True, 'mobile': True}
 
-        # ToDo: country code prefixes?
-
+        # ToDo: country code prefixes? Combine phone - iso2 - country name!
 
     def get_prefix_dict(self, number):
         """ Return a dict for a prefix, with code, name, active, mobile. """
@@ -81,7 +80,6 @@ class CallPrefix:
             if prefix in self.prefix_dict:
                 return self.prefix_dict[prefix]
         return None
-
 
     def get_prefix_name(self, number):
         """ Return name for a prefix, if found and in Germany. """

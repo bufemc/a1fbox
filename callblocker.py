@@ -1,10 +1,9 @@
-import csv
 import logging
 from enum import Enum
 
 from callinfo import CallInfo, CallInfoType
-from callprefix import CallPrefix
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
+from callprefix import CallPrefix
 from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from log import Log
 from phonebook import Phonebook
@@ -15,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class CallBlockerRate(Enum):
-    """ Custom blocker rates. Not used yet, as method is sufficient for the method to distinguish rated entries. """
+    """ Custom blocker rates. Currently method is sufficient to distinguish rated entries. """
 
     WHITELIST = "WHITELIST"
     BLACKLIST = "BLACKLIST"
@@ -45,8 +44,6 @@ class CallBlockerLine:
         self.date, self.time = self.datetime.split(' ')
         if int(self.method) == CallInfoType.TELLOWS_SCORE.value:
             self.score, self.comments, self.searches = more[0], more[1], more[2]
-        if int(self.method) == CallInfoType.REV_SEARCH.value:
-            raise NotImplementedError
 
     def __str__(self):
         """ Pretty print a line from call blocker (ignoring method), by considering the method. """
@@ -121,7 +118,7 @@ class CallBlocker:
 
             if name_white or name_black:
                 name = name_black if name_black else name_white  # Reason: black might win over white by blocking it
-                rate = 'BLACKLIST' if name_black else 'WHITELIST'
+                rate = CallBlockerRate.BLACKLIST.value if name_black else CallBlockerRate.WHITELIST.value
                 raw_line = f'{dt};{rate};0;{full_number};"{name}";' + "\n"
 
             else:
@@ -136,9 +133,9 @@ class CallBlocker:
                     if result:  # If not {} returned, it's an error
                         log.warning("Adding to phonebook failed:")
                         print(result)
-                    rate = "BLOCK"
+                    rate = CallBlockerRate.BLOCK.value
                 else:
-                    rate = "PASS"
+                    rate = CallBlockerRate.PASS.value
                 raw_line = f'{dt};{rate};1;{full_number};{score_str}' + "\n"
 
             log.debug(raw_line)
