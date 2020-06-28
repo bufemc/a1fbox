@@ -91,9 +91,8 @@ class CallBlocker:
         self.pb.ensure_pb_ids_valid(self.whitelist_pbids + self.blacklist_pbids + [self.blocklist_pbid])
         self.whitelist = self.pb.get_all_numbers_for_pb_ids(self.whitelist_pbids)
         self.blacklist = self.pb.get_all_numbers_for_pb_ids(self.blacklist_pbids)
-        area_name = self.cp.area['name'] if self.cp.area else 'UNKNOWN'
         print(f'Call blocker initialized.. '
-              f'country_code:{self.cp.country_code} area_code:{self.cp.area_code} area_name:{area_name} '
+              f'country_code:{self.cp.country_code} area_code:{self.cp.area_code} area_name:{self.cp.area_code_name} '
               f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
 
     def parse_and_examine_line(self, raw_line):
@@ -161,9 +160,7 @@ if __name__ == "__main__":
     cm = CallMonitor(logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 
     # Provoke whitelist test
-    # test_line = '17.06.20 10:28:29;RING;0;07191952010;69xxx;SIP0;'
-    # cb.parse_and_examine_line(test_line)
+    # test_line = '17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
     # Provoke blacklist test
-    # test_line = '17.06.20 10:28:29;RING;0;09912568741596;69xxx;SIP0;'
-    # cb.parse_and_examine_line(test_line)
+    # test_line = '17.06.20 10:28:29;RING;0;09912568741596;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
     # cm.stop()

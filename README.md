@@ -7,13 +7,17 @@ Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handlin
     - CallMonitorLine: line parser and phone number anonymizer
     - CallMonitorLog: optional logger for lines, either one big file or daily files
 
-- CallInfo: examine a phone number (e.g. do scoring or reverse search)
-
-- CallPrefix: provides area code (e.g. 07191 for Backnang), country code (e.g. 0049 for Germany) and ONB from BNetzA.
-
 - CallBlocker: _EXPERIMENTAL_ (WIP, "API" is not final) - listen to call monitor and check RING events 
     - CallBlockerLine: line parser and phone number/name anonymizer
     - CallBlockerLog: optional logger for actions, either one big file or daily files
+
+- CallInfo: examine an unknown phone number for rating or naming
+    - CallInfoType: e.g. Tellows for scoring or RevSearch for reverse search via dasOertliche
+
+- CallPrefix: retrieve own area code and country code from Fritzbox or from a phone number, resolve name, using data:
+    - ONB: (German) "Ortsnetzbereiche", area codes for Germany for landline numbers (from BNetzA)
+    - RNB: (German) "Mobile Dienste, zugeteilte RNB", codes for mobile numbers (from BNetzA)
+    - countryio-phone / -names: country codes and names (from country.io)
     
 - Phonebook: inherited and extended from [fritzconnection]'s FritzPhonebook
     - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55] 
@@ -58,13 +62,19 @@ MIT
 If you search an alternative in PHP for automated call blocking, check out [fbcallrouter]. 
 This project by Volker Pueschel aka blacksenator gave me some impulses.  
 
-#### Data folder: ONB
+#### Data folder: ONB, RNB
 
 Like previous mentioned project, this uses _ONB_ = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen) aka local area codes. 
 The list used is from the "BNetzA" (German "Bundesnetzagentur") and should be valid for a limited period of time. 
 If you want to update them, then download the offered CSV file (see link titled "Vorwahlverzeichnis")
 from [BNetzA-ONB]. Unpack the archive (there can be an archive in the archive, unpack also this) 
 and save the file, but renamed to ```onb.csv```, in the ./data directory.
+
+RNB are "Mobile Dienste, zugeteilte RNB, Stand: 12.03.2019". Data was copied from https://tinyurl.com/y7648pc9 -
+just replace the first space or tab with a semicolon. 
+
+Country data is taken from http://country.io/data/ - http://country.io/phone.json and http://country.io/names.json -
+downloaded 28th June 2020, but not sure how accurate the data is.
 
 ONB file provided here, was originally named: NVONB.INTERNET.20200610.ONB 
     
@@ -142,7 +152,8 @@ More links - if you want to dive deeper:
 
 ToDo and/or further planning (pb = phonebook):
 - Unit tests
-- Methods init_onb and set_area_code.. should go in additional class
+- CallPrefix needs refactoring - should an area code or country code be an instance of CallPrefix, and the helper class
+    get another name, like CallPrefixManager?
 - Injection of numbers to or instead of call monitor (mockup?) for: whitelist, blacklist, block, pass
 - Check possibility to merge/generalize CallBlockerInfo and CallBlockerLine - e.g. by inheritance classA(classB)
 - Method to retrieve last (400 max?) phone numbers and examine/rate them (BUT, by using a cache!) (except if in pbs?)
