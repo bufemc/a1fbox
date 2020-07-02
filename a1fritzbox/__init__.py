@@ -4,8 +4,8 @@ __all__ = ["CallInfo", "CallInfoType",
            "CallBlocker", "CallBlockerLog", "CallBlockerLine", "CallBlockerRate",
            "Phonebook"]
 
-from .log import Log
-from .utils import anonymize_number
+# from .log import Log
+# from .utils import anonymize_number
 
 # from .callinfo import CallInfo, CallInfoType
 # from .callprefix import CallPrefix, CallPrefixType
