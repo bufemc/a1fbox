@@ -8,9 +8,12 @@ import threading
 import time
 from enum import Enum
 
-from config import FRITZ_IP_ADDRESS
-from log import Log
+# from config import FRITZ_IP_ADDRESS
+# Better solution required!
+import sys, os
+sys.path.append(os.path.dirname(__file__))
 from utils import anonymize_number
+from log import Log
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
@@ -112,9 +115,9 @@ class CallMonitorLog(Log):
 class CallMonitor:
     """ Connect and listen to call monitor of Fritzbox, port is by default 1012. Enable it by dialing #96*5*. """
 
-    def __init__(self, host=FRITZ_IP_ADDRESS, port=1012, autostart=True, logger=None, parser=None):
+    def __init__(self, host=None, port=1012, autostart=True, logger=None, parser=None):
         """ By default will start the call monitor automatically and parse the lines. """
-        self.host = host
+        self.host = host if host else FRITZ_IP_ADDRESS
         self.port = port
         self.socket = None
         self.thread = None
@@ -205,7 +208,13 @@ class CallMonitor:
 
 
 if __name__ == "__main__":
+
+    # ToDo: Config & init is still a mess
+    import sys
+    sys.path.append("..")
+    from config import FRITZ_IP_ADDRESS
+
     # Quick example how to use only
     cm_log = CallMonitorLog(daily=True, anonymize=False)
-    cm = CallMonitor(logger=cm_log.log_line)
+    cm = CallMonitor(host=FRITZ_IP_ADDRESS, logger=cm_log.log_line)
     # cm.stop()

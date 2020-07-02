@@ -1,12 +1,16 @@
 import logging
 from enum import Enum
 
+# from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from callinfo import CallInfo, CallInfoType
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 from callprefix import CallPrefix
-from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
-from log import Log
 from phonebook import Phonebook
+
+# Better solution required!
+import sys, os
+sys.path.append(os.path.dirname(__file__))
+from log import Log
 from utils import anonymize_number
 
 logging.basicConfig(level=logging.WARNING)
@@ -146,6 +150,12 @@ class CallBlocker:
 
 
 if __name__ == "__main__":
+
+    # ToDo: Config & init is still a mess
+    import sys
+    sys.path.append("..")
+    from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
+
     # Quick example how to use only
     # There are two loggers. cm_log logs the raw line from call monitor of Fritzbox,
     # cb_log logs the actions of the call blocker. The CallMonitor uses the
@@ -157,7 +167,7 @@ if __name__ == "__main__":
     cb = CallBlocker(whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2,
                      blockname_prefix='[Spam] ', min_score=6, min_comments=3, logger=cb_log.log_line)
     cm_log = CallMonitorLog(daily=True, anonymize=False)
-    cm = CallMonitor(logger=cm_log.log_line, parser=cb.parse_and_examine_line)
+    cm = CallMonitor(host=FRITZ_IP_ADDRESS, logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 
     # Provoke whitelist test
     # test_line = '17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)

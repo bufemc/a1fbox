@@ -49,7 +49,7 @@ class CallPrefix:
         self.prefix_dict = dict()
 
         # Landline prefixes for Germany, including CSV header, see https://tinyurl.com/y7648pc9
-        with open('./data/onb.csv', encoding='utf-8') as csvfile:
+        with open('../data/onb.csv', encoding='utf-8') as csvfile:
             csvreader = csv.reader(csvfile, delimiter=';')
             for i, row in enumerate(csvreader):
                 if i == 0:
@@ -65,7 +65,7 @@ class CallPrefix:
                     self.prefix_dict[area_code] = {'code': area_code, 'name': name, 'active': active, 'mobile': False}
 
         # Mobile prefixes for Germany, no CSV header
-        with open('./data/rnb.csv', encoding='utf-8') as csvfile:
+        with open('../data/rnb.csv', encoding='utf-8') as csvfile:
             csvreader = csv.reader(csvfile, delimiter=';')
             for row in csvreader:
                 if len(row) == 2:

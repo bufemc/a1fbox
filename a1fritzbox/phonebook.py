@@ -2,7 +2,7 @@
 
 import logging
 
-from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
+# from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from fritzconnection.lib.fritzphonebook import FritzPhonebook
 
 logging.basicConfig(level=logging.WARNING)
@@ -123,6 +123,13 @@ class Phonebook(FritzPhonebook):
 
 
 if __name__ == "__main__":
+
+    # ToDo: Config & init is still a mess
+    import sys
+
+    sys.path.append("..")
+    from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
+
     # Quick example how to use only
     pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
     contacts = pb.get_all_contacts(0)  # Exists always, but can be empty

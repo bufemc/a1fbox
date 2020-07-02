@@ -99,7 +99,7 @@ if __name__ == "__main__":
     # Quick example how to use only
     number = "022189920"  # BzGA
     ci = CallInfo(number)
-    assert(ci.method == CallInfoType.INIT.value)
+    assert (ci.method == CallInfoType.INIT.value)
     print(ci)
     ci.get_tellows_score()
     assert (ci.method == CallInfoType.TELLOWS_SCORE.value)

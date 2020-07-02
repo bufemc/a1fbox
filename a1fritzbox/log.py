@@ -14,7 +14,7 @@ class Log:
         if log_folder:
             self.log_folder = log_folder
         else:
-            self.log_folder = os.path.join(os.path.dirname(__file__), "log")
+            self.log_folder = os.path.join(os.path.dirname(__file__), "../log")
         os.makedirs(self.log_folder, exist_ok=True)
 
     def get_log_filepath(self):

@@ -152,6 +152,8 @@ More links - if you want to dive deeper:
 
 ToDo and/or further planning (pb = phonebook):
 - Unit tests
+- Config and initialization is a mess ATM, since moved to package
+- Config should be read only once/kept only once, currently read from several modules in package, solution maybe like fritzconnection/core in __init__.py?
 - CallBlockerLog sometimes doubled entries?
 - CallPrefix needs refactoring 
     - should an area code or country code be an instance of CallPrefix, and the helper class get another name, like CallPrefixManager?
