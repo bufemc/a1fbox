@@ -152,8 +152,16 @@ More links - if you want to dive deeper:
 
 ToDo and/or further planning (pb = phonebook):
 - Unit tests
-- CallPrefix needs refactoring - should an area code or country code be an instance of CallPrefix, and the helper class
-    get another name, like CallPrefixManager?
+- CallBlockerLog sometimes doubled entries?
+- CallPrefix needs refactoring 
+    - should an area code or country code be an instance of CallPrefix, and the helper class get another name, like CallPrefixManager?
+    - should the very own Fritzbox area code and country code also be stored as CallPrefix or go into specialised CallPrefixFritzbox(CallPrefix), or is just an extra method in CallPrefixManager?
+- CallInfo could do a combined search: first tellows scoring, then rev search, use tellows result but with name of rev search, if name is longer?
+- CallInfo should be smarter:
+    - Reverse search (/Tellows) only if number not starting with 00 or is 0049?
+    - Numbers like 00114989998288xx need to parse also?:         
+        - https://www.wemgehoert.de/nummer/00114989998288xxx
+        - https://telefonnummer.net/rufnummer/114989998288xxx
 - Injection of numbers to or instead of call monitor (mockup?) for: whitelist, blacklist, block, pass
 - Check possibility to merge/generalize CallBlockerInfo and CallBlockerLine - e.g. by inheritance classA(classB)
 - Method to retrieve last (400 max?) phone numbers and examine/rate them (BUT, by using a cache!) (except if in pbs?)

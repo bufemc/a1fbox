@@ -19,8 +19,15 @@ class CallPrefixType(Enum):
 #    """ Should a call prefix be an instance of this instead, the other class be renamed to e.g. CallPrefixManager? """
 
 
+# class CallPrefixFritzbox:
+#     """ Only used for retrieving Fritzbox's country and area code. """
+#     def __init__(self, fc):
+#         """ Provide a fc = fritz connection, required to retrieve area and country code. """
+#         self.fc = fc
+
+
 class CallPrefix:
-    """ Retrieves country code, area code from Fritzbox and provides German area codes plus country codes. """
+    """ Rename to Manager? Retrieves country code, area code from Fritzbox and provides German area codes plus country codes. """
 
     def __init__(self, fc):
         """ Provide a fc = fritz connection, required to retrieve area and country code. """
@@ -43,15 +50,13 @@ class CallPrefix:
 
         # Landline prefixes for Germany, including CSV header, see https://tinyurl.com/y7648pc9
         with open('./data/onb.csv', encoding='utf-8') as csvfile:
-            first_line = True
             csvreader = csv.reader(csvfile, delimiter=';')
-            for row in csvreader:
-                if first_line:
+            for i, row in enumerate(csvreader):
+                if i == 0:
                     # This is for prevention only, if the order is changed it will fail here intentionally
                     assert (row[0] == 'Ortsnetzkennzahl')
                     assert (row[1] == 'Ortsnetzname')
                     assert (row[2] == 'KennzeichenAktiv')
-                    first_line = False
                     continue
                 if len(row) == 3:  # Last line is ['\x1a']
                     area_code = '0' + row[0]

@@ -42,13 +42,13 @@ class CallBlockerLine:
         self.datetime, self.rate, self.method, self.caller, self.name, *more = raw_line.strip().split(';', 8)
         self.name = self.name.strip('"')  # "ab"cd" => ab"cd
         self.date, self.time = self.datetime.split(' ')
-        if int(self.method) == CallInfoType.TELLOWS_SCORE.value:
+        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.TEL_AND_REV.value]:
             self.score, self.comments, self.searches = more[0], more[1], more[2]
 
     def __str__(self):
         """ Pretty print a line from call blocker (ignoring method), by considering the method. """
         start = f'date:{self.date} time:{self.time} rate:{self.rate} caller:{self.caller} name:{self.name}'
-        if int(self.method) == CallInfoType.TELLOWS_SCORE.value:
+        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.TEL_AND_REV.value]:
             return f'{start} score:{self.score} comments:{self.comments} searches:{self.searches}'
         else:
             return start
@@ -123,7 +123,7 @@ class CallBlocker:
 
             else:
                 ci = CallInfo(full_number)
-                ci.get_tellows_score()
+                ci.get_tellows_and_revsearch()
                 # Adapt to logging style of call monitor. Task of logger to parse the values to keys/names?
                 score_str = f'"{ci.name}";{ci.score};{ci.comments};{ci.searches};'
 
@@ -150,6 +150,9 @@ if __name__ == "__main__":
     # There are two loggers. cm_log logs the raw line from call monitor of Fritzbox,
     # cb_log logs the actions of the call blocker. The CallMonitor uses the
     # CallBlocker and it's parse_and_examine_line method to examine the raw line.
+
+    # ToDo: could also define which rating method should be used?
+
     cb_log = CallBlockerLog(daily=True, anonymize=False)
     cb = CallBlocker(whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2,
                      blockname_prefix='[Spam] ', min_score=6, min_comments=3, logger=cb_log.log_line)

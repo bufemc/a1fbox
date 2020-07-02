@@ -12,7 +12,8 @@ class CallInfoType(Enum):
 
     INIT = 0
     TELLOWS_SCORE = 1
-    REV_SEARCH = 2
+    TEL_AND_REV = 2
+    REV_SEARCH = 3
 
 
 class CallInfo:
@@ -23,6 +24,15 @@ class CallInfo:
         self.number = number
         self.name = unknown_name
         self.method = CallInfoType.INIT.value
+
+    def get_tellows_and_revsearch(self):
+        """ Combine tellows and rev search. If name of rev search is longer than tellows, it will be used. """
+        self.get_revsearch_info()
+        rev_name = self.name
+        self.get_tellows_score()
+        if len(rev_name) > len(self.name):
+            self.name = rev_name
+        self.method = CallInfoType.TEL_AND_REV.value
 
     def get_tellows_score(self):
         """ Do scoring for a phone number via Tellows - extract score, comments, build a name:
@@ -59,9 +69,9 @@ class CallInfo:
             req = requests.get(url)
             req.raise_for_status()
             content = req.text
-            # Extract only the javascript line "handlerData", precisely the content between [[ .. ]]
+            # Extract only the javascript line "handlerData", precisely the content between [[ .. ]
             str_begin = 'var handlerData = [['
-            str_end = ']]'
+            str_end = ']'  # Ends with ]] if one match only, but can contain several names, e.g. 071919524xx
             pos_1 = content.find(str_begin)
             if pos_1 != -1:
                 content = content[pos_1 + len(str_begin):]
@@ -79,7 +89,7 @@ class CallInfo:
     def __str__(self):
         """ To relevant properties shortened output. """
         start = f'number:{self.number} name:{self.name}'
-        if int(self.method) == 1:
+        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.TEL_AND_REV.value]:
             return f'{start} score:{self.score}'
         else:
             return start
@@ -89,11 +99,14 @@ if __name__ == "__main__":
     # Quick example how to use only
     number = "022189920"  # BzGA
     ci = CallInfo(number)
-    print(ci)
     assert(ci.method == CallInfoType.INIT.value)
+    print(ci)
     ci.get_tellows_score()
     assert (ci.method == CallInfoType.TELLOWS_SCORE.value)
     print(ci)
     ci.get_revsearch_info()
     assert (ci.method == CallInfoType.REV_SEARCH.value)
+    print(ci)
+    ci.get_tellows_and_revsearch()
+    assert (ci.method == CallInfoType.TEL_AND_REV.value)
     print(ci)
