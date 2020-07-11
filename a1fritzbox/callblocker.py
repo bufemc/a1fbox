@@ -195,4 +195,4 @@ if __name__ == "__main__":
     # cm.stop()
 
     # Provoke CLIR (caller number suppressed)
-    test_line = '11.07.20 14:10:13;RING;0;;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+    # test_line = '11.07.20 14:10:13;RING;0;;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)

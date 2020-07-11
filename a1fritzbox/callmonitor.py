@@ -121,7 +121,6 @@ class CallMonitor:
         self.port = port
         self.socket = None
         self.thread = None
-        self.active = False
         self.parser = parser if parser else self.parse_line
         self.logger = logger
         if autostart:
@@ -172,8 +171,7 @@ class CallMonitor:
     def stop(self):
         """ Stop the socket connection and the listener thread. """
         log.info("Stop listening..")
-        self.active = False
-        time.sleep(1)  # Give thread some time to recognize !self.active, better solution required
+        self.thread.do_run = False  # More reliable than while (self.active)
         if self.socket:
             self.socket.shutdown(socket.SHUT_RDWR)
         if self.thread and self.thread.is_alive():
@@ -183,18 +181,18 @@ class CallMonitor:
         """ Listen to the call monitor socket connection. Have to be TCP keep alive enabled. """
         log.info("Start listening..")
         print("Call monitor listening started..")
-        self.active = True
-        while (self.active):
+        # https://stackoverflow.com/questions/18018033/how-to-stop-a-looping-thread-in-python
+        t = threading.currentThread()
+        while getattr(t, "do_run", True):
             try:
                 if (not self.socket or self.socket._closed):
                     log.warning("Socket closed - reconnecting..")
                     self.connect_tcp_keep_alive_socket()
-                    # Strange: socket is reconnected even if network cable is still unplugged,
-                    # but call monitor continues to work after plugin, a miracle?
+                    # Socket is reconnected even if network cable is unplugged, continues to work after plugged in
                     if self.socket:
                         print("Socket reconnected..")
                 with contextlib.closing(self.socket.makefile()) as file:
-                    line_generator = (line for line in file if self.active and file)
+                    line_generator = (line for line in file if file)
                     for raw_line in line_generator:
                         self.parser(raw_line)
                         if self.logger:
