@@ -51,6 +51,7 @@ class CallBlockerLine:
 
     def __str__(self):
         """ Pretty print a line from call blocker (ignoring method), by considering the method. """
+        # caller = self.caller if self.caller else 'CLIR'
         start = f'date:{self.date} time:{self.time} rate:{self.rate} caller:{self.caller} name:{self.name}'
         if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.TEL_AND_REV.value]:
             return f'{start} score:{self.score} comments:{self.comments} searches:{self.searches}'
@@ -77,7 +78,7 @@ class CallBlocker:
     """ Parse call monitor, examine RING event's phone number. """
 
     def __init__(self, whitelist_pbids, blacklist_pbids, blocklist_pbid, blockname_prefix='',
-                 min_score=6, min_comments=3, logger=None):
+                 min_score=6, min_comments=3, block_anon=False, block_abroad=False, logger=None):
         """ Provide a whitelist phonebook (normally first index 0) and where blocked numbers should go into. """
         self.whitelist_pbids = whitelist_pbids
         self.blacklist_pbids = blacklist_pbids
@@ -85,9 +86,13 @@ class CallBlocker:
         self.blockname_prefix = blockname_prefix
         self.min_score = int(min_score)
         self.min_comments = int(min_comments)
+        self.block_anon = block_anon
+        self.block_abroad = block_abroad  # ToDo
         self.logger = logger
         print("Retrieving data from Fritz!Box..")
         self.pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
+        fritz_model = self.pb.fc.modelname
+        fritz_os = self.pb.fc.system_version
         self.cp = CallPrefix(fc=self.pb.fc)
         self.pb.ensure_pb_ids_valid(self.whitelist_pbids + self.blacklist_pbids + [self.blocklist_pbid])
         self.whitelist = self.pb.get_all_numbers_for_pb_ids(self.whitelist_pbids)
@@ -106,41 +111,55 @@ class CallBlocker:
             dt = cm_line.datetime  # Use same datetime for exact match
 
             number = cm_line.caller
-            if number.startswith('0'):
-                full_number = number
-            else:
-                full_number = self.cp.area_code + number
 
-            # 1. Is either full number 071..123... or short number 123... in the white- or blacklist?
-            name_white = self.pb.get_name_for_number_in_dict(number, self.whitelist, area_code=self.cp.area_code)
-            name_black = self.pb.get_name_for_number_in_dict(number, self.blacklist, area_code=self.cp.area_code)
+            if not number:  # Caller uses NO number (so called CLIR feature)
 
-            if name_white and name_black:
-                raise Exception(f'Problem in your phonebooks detected: '
-                                f'a number should not be on white- and blacklist. Please fix! Details: '
-                                f'whitelist:{name_white} blacklist:{name_black}')
+                # We cannot block anon numbers, except you could add a rule in Fritzbox to do so?
+                rate = CallBlockerRate.PASS.value  # CallBlockerRate.BLOCK.value if self.block_anon else CallBlockerRate.PASS.value
+                raw_line = f'{dt};{rate};0;;ANON;' + "\n"
 
-            if name_white or name_black:
-                name = name_black if name_black else name_white  # Reason: black might win over white by blocking it
-                rate = CallBlockerRate.BLACKLIST.value if name_black else CallBlockerRate.WHITELIST.value
-                raw_line = f'{dt};{rate};0;{full_number};"{name}";' + "\n"
+            else:  # Caller WITH phone number
 
-            else:
-                ci = CallInfo(full_number)
-                ci.get_tellows_and_revsearch()
-                # Adapt to logging style of call monitor. Task of logger to parse the values to keys/names?
-                score_str = f'"{ci.name}";{ci.score};{ci.comments};{ci.searches};'
+                if number.startswith('00'):
+                    if not number.startswith(self.cp.country_code) and self.block_abroad:
+                        pass  # ToDo
 
-                if ci.score >= self.min_score and ci.comments >= self.min_comments:
-                    name = self.blockname_prefix + ci.name
-                    result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
-                    if result:  # If not {} returned, it's an error
-                        log.warning("Adding to phonebook failed:")
-                        print(result)
-                    rate = CallBlockerRate.BLOCK.value
+                if number.startswith('0'):
+                    full_number = number
                 else:
-                    rate = CallBlockerRate.PASS.value
-                raw_line = f'{dt};{rate};1;{full_number};{score_str}' + "\n"
+                    full_number = self.cp.area_code + number
+
+                # 1. Is either full number 071..123... or short number 123... in the white- or blacklist?
+                name_white = self.pb.get_name_for_number_in_dict(number, self.whitelist, area_code=self.cp.area_code)
+                name_black = self.pb.get_name_for_number_in_dict(number, self.blacklist, area_code=self.cp.area_code)
+
+                if name_white and name_black:
+                    raise Exception(f'Problem in your phonebooks detected: '
+                                    f'a number should not be on white- and blacklist. Please fix! Details: '
+                                    f'whitelist:{name_white} blacklist:{name_black}')
+
+                if name_white or name_black:
+                    name = name_black if name_black else name_white  # Reason: black might win over white by blocking it
+                    rate = CallBlockerRate.BLACKLIST.value if name_black else CallBlockerRate.WHITELIST.value
+                    raw_line = f'{dt};{rate};0;{full_number};"{name}";' + "\n"
+
+                else:
+                    ci = CallInfo(full_number)
+                    ci.get_tellows_and_revsearch()
+                    # Adapt to logging style of call monitor. Task of logger to parse the values to keys/names?
+                    score_str = f'"{ci.name}";{ci.score};{ci.comments};{ci.searches};'
+
+                    if ci.score >= self.min_score and ci.comments >= self.min_comments:
+                        name = self.blockname_prefix + ci.name
+                        # ToDo: should go in extra method
+                        result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
+                        if result:  # If not {} returned, it's an error
+                            log.warning("Adding to phonebook failed:")
+                            print(result)
+                        rate = CallBlockerRate.BLOCK.value
+                    else:
+                        rate = CallBlockerRate.PASS.value
+                    raw_line = f'{dt};{rate};1;{full_number};{score_str}' + "\n"
 
             log.debug(raw_line)
             parsed_line = CallBlockerLine(raw_line)
@@ -174,3 +193,6 @@ if __name__ == "__main__":
     # Provoke blacklist test
     # test_line = '17.06.20 10:28:29;RING;0;09912568741596;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
     # cm.stop()
+
+    # Provoke CLIR (caller number suppressed)
+    test_line = '11.07.20 14:10:13;RING;0;;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)

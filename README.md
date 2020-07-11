@@ -151,6 +151,9 @@ More links - if you want to dive deeper:
 #### Planning
 
 ToDo and/or further planning (pb = phonebook):
+- Architecture pains: should fritzconn be passed if required, and abstraction layers be used?
+- When caller uses CLIR there is no number, what should happen, e.g. extra state CLIR, should be blocked (is it possible?) or not
+- When caller uses country code from abroad, should be blocked or not (blocking action should go in extra method)
 - Unit tests
 - Config and initialization is a mess ATM, since moved to package
 - Config should be read only once/kept only once, currently read from several modules in package, solution maybe like fritzconnection/core in __init__.py?
