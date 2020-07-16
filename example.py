@@ -1,5 +1,5 @@
 from config import FRITZ_IP_ADDRESS
-from a1fritzbox.callmonitor import CallMonitor, CallMonitorLog
+from a1fbox.callmonitor import CallMonitor, CallMonitorLog
 
 if __name__ == "__main__":
     print("To stop enter '!' (exclamation mark) followed by ENTER key..")
