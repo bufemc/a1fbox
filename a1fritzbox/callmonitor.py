@@ -185,7 +185,7 @@ class CallMonitor:
         t = threading.currentThread()
         while getattr(t, "do_run", True):
             try:
-                if (not self.socket or self.socket._closed):
+                if not self.socket or self.socket._closed:
                     log.warning("Socket closed - reconnecting..")
                     self.connect_tcp_keep_alive_socket()
                     # Socket is reconnected even if network cable is unplugged, continues to work after plugged in
@@ -202,7 +202,7 @@ class CallMonitor:
                 log.warning(e)
                 print("Network unreachable, trying to reconnect..")
                 self.socket = None
-                time.sleep(1)
+                time.sleep(3)
 
 
 if __name__ == "__main__":

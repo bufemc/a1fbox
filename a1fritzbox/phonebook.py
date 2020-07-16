@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import logging
+import html
 
 # from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from fritzconnection.lib.fritzphonebook import FritzPhonebook
@@ -56,10 +57,16 @@ class Phonebook(FritzPhonebook):
     def add_contact(self, pb_id, name, number, skip_existing=True):
         """ Bad style, but works. Should use a fritzconnection's Contact object and Soaper later. """
 
+        # Temporary workaround to cover the Umlaut problem - still not solved perfectly!
+        # https://stackoverflow.com/questions/701704/convert-html-entities-to-unicode-and-vice-versa
+        # Creates correct &#228; for ä, however Fritzbox displays Ã¤ (&auml; would work instead)
+        name = html.escape(name).encode('ascii', 'xmlcharrefreplace').decode()
+
         arg = {'NewPhonebookID': pb_id,
                'NewPhonebookEntryID': '',
                'NewPhonebookEntryData':
-                   f'<Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">'
+                   # f'<?xml version="1.0" encoding="utf-8"?>'
+                   f'<Envelope>'  # xmlns:s="http://www.w3.org/2003/05/soap-envelope" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
                    f'<contact>'
                    f'<category>0</category>'
                    f'<person><realName>{name}</realName></person>'
@@ -138,5 +145,6 @@ if __name__ == "__main__":
 
     # Works only if phonebook with id 2 exists and should not be executed too often
     # result = pb.add_contact(2, 'CallBlockerTest', '009912345')
+    # result = pb.add_contact(2, 'CallBlockerTest-Umläut', '009912345', skip_existing=False)
 
     # Could add a test if number with/without area_code is found in phonebook, but maybe needs a mockup/fake
