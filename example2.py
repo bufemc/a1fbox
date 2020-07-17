@@ -3,7 +3,7 @@
 # This more complex example shows how to connect the modules aka building blocks.
 # It listens to the call monitor of the Fritz!Box, and will examine the calls.
 # If the score is too bad it will block the call (for the next time) by adding it
-# to the blacklisted (has to be configured to do so!) phonebook.
+# to the blacklisted (has to be configured to do so!) phonebook (here id 2).
 
 # REQUIRED: To enable call monitor dial #96*5* and to disable dial #96*4.
 # REQUIRED: A phonebook id where bad calls should be added. Configure it in Fritzbox to decline calls!
