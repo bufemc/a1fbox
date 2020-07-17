@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import csv
 import logging
 from enum import Enum

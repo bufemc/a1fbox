@@ -1,20 +1,23 @@
+#!/usr/bin/python3
+
 from collections import Counter
 from time import sleep
 from callprefix import CallPrefix
 from callinfo import CallInfo
 from phonebook import Phonebook
+from fritzconn import FritzConn
 from fritzconnection.lib.fritzcall import FritzCall
 
 
 if __name__ == "__main__":
+    # Quick example how to use only
 
-    # ToDo: Config & init is still a mess
-    import sys
-    sys.path.append("..")
-    from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
+    # Initialize by using parameters from config file
+    fritzconn = FritzConn()
 
-    fc = FritzCall(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
-    cp = CallPrefix(fc=fc.fc)
+    fc = FritzCall(fc=fritzconn)
+    cp = CallPrefix(fc=fritzconn)
+    pb = Phonebook(fc=fritzconn)
 
     calls = fc.get_missed_calls(update=True)
     missed_list = []
@@ -37,7 +40,6 @@ if __name__ == "__main__":
     print(f'\nAll {len(calls)} calls, uniqued {len(numbers)}:')
     print(numbers)
 
-    pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
     anylist = pb.get_all_numbers_for_pb_ids([0,1,2])  # White- or blacklist
 
     print('\nWhite- or blacklisted:')
@@ -49,12 +51,10 @@ if __name__ == "__main__":
         else:
             unknowns.add(number)
 
+    # Idea: rate & info ... auto-block .. or add good names to whitelist?
     print('\nResolving Unknowns:')
     for unknown in unknowns:
         ci = CallInfo(unknown)
         ci.get_tellows_and_revsearch()
         print(ci)
-        sleep(5)
-
-    # ToDo: check if in white or blacklist.. then print name & skip,
-    # otherwise: rate & info ... auto-block .. or add good names to whitelist?
+        sleep(5)  # Anti-DDOS for tellows, otherwise you get blocked

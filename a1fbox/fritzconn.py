@@ -45,14 +45,14 @@ class FritzConn(FritzConnection):
             FritzConn.__instance = self
 
         # Fallback: if parameters are not given and constants not defined, use the config.py in the upper folder
-        if not address and not (os.getenv('FRITZ_IP_ADDRESS', None)) and not 'FRITZ_IP_ADDRESS' in globals():
+        if not address and not (os.getenv('FRITZ_IP_ADDRESS', None)) and not 'FRITZ_IP_ADDRESS' in locals():
             import sys
             sys.path.append("..")
             from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD, FRITZ_TLS_PORT, FRITZ_TCP_PORT
 
         # Fallback if user and pass are not given, as they are not required always
-        fritz_user = FRITZ_USERNAME if 'FRITZ_USERNAME' in globals() else 'dslf-config'
-        fritz_pass = FRITZ_PASSWORD if 'FRITZ_PASSWORD' in globals() else ''
+        fritz_user = FRITZ_USERNAME if 'FRITZ_USERNAME' in locals() else 'dslf-config'
+        fritz_pass = FRITZ_PASSWORD if 'FRITZ_PASSWORD' in locals() else ''
 
         if address is None:
             address = os.getenv('FRITZ_IP_ADDRESS', FRITZ_IP_ADDRESS)
@@ -63,9 +63,9 @@ class FritzConn(FritzConnection):
             password = os.getenv('FRITZ_PASSWORD', fritz_pass)
 
         if port is None and use_tls:
-            port = FRITZ_TLS_PORT if 'FRITZ_TLS_PORT' in globals() else 49443
+            port = FRITZ_TLS_PORT if 'FRITZ_TLS_PORT' in locals() else 49443
         elif port is None:
-            port = FRITZ_TCP_PORT if 'FRITZ_TCP_PORT' in globals() else 49000
+            port = FRITZ_TCP_PORT if 'FRITZ_TCP_PORT' in locals() else 49000
 
         super().__init__(address, port, user, password, timeout, use_tls)
 
@@ -76,9 +76,11 @@ class FritzConn(FritzConnection):
 
 
 if __name__ == "__main__":
+    # Quick example how to use only
+
     # You can either connect by giving parameters, at least the address
     # fc = FritzConn.get_instance(address='fritz.box')
 
-    # Or, if given no parameters the config.py in the upper directory is used
+    # Or, if given no parameters the config.py file in the upper directory is used
     fc = FritzConn.get_instance()
     print(fc)

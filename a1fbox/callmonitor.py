@@ -2,16 +2,16 @@
 
 import contextlib
 import logging
+import os
 import platform
 import socket
+import sys
 import threading
 import time
 from enum import Enum
 
-# from config import FRITZ_IP_ADDRESS
-# Better solution required!
-import sys, os
 sys.path.append(os.path.dirname(__file__))
+from fritzconn import FritzConn
 from utils import anonymize_number
 from log import Log
 
@@ -117,7 +117,7 @@ class CallMonitor:
 
     def __init__(self, host=None, port=1012, autostart=True, logger=None, parser=None):
         """ By default will start the call monitor automatically and parse the lines. """
-        self.host = host if host else FRITZ_IP_ADDRESS
+        self.host = host.replace('https://', '').replace('http://', '')
         self.port = port
         self.socket = None
         self.thread = None
@@ -206,13 +206,12 @@ class CallMonitor:
 
 
 if __name__ == "__main__":
+    # Quick example how to use only
 
-    # ToDo: Config & init is still a mess
-    import sys
-    sys.path.append("..")
-    from config import FRITZ_IP_ADDRESS
+    # Initialize by using parameters from config file
+    fritzconn = FritzConn()
 
     # Quick example how to use only
     cm_log = CallMonitorLog(daily=True, anonymize=False)
-    cm = CallMonitor(host=FRITZ_IP_ADDRESS, logger=cm_log.log_line)
+    cm = CallMonitor(host=fritzconn.address, logger=cm_log.log_line)
     # cm.stop()

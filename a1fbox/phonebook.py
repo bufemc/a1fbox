@@ -2,8 +2,8 @@
 
 import logging
 import html
+from fritzconn import FritzConn
 
-# from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
 from fritzconnection.lib.fritzphonebook import FritzPhonebook
 
 logging.basicConfig(level=logging.WARNING)
@@ -51,7 +51,9 @@ class Phonebook(FritzPhonebook):
         reverse_contacts = dict()
         for name, numbers in self.get_all_names(id, keep_internals).items():
             for number in numbers:
-                reverse_contacts[number] = name
+                # A number can contain spaces, e.g. like "<area code> <number>"
+                nr = number.replace(' ', '')
+                reverse_contacts[nr] = name
         return reverse_contacts
 
     def add_contact(self, pb_id, name, number, skip_existing=True):
@@ -106,23 +108,35 @@ class Phonebook(FritzPhonebook):
 
     def get_all_numbers_for_pb_ids(self, pb_ids):
         """ Retrieve and concatenate number-name-dicts for several phonebook ids. """
+        assert(type(pb_ids) == list)
         number_name_dict = dict()
         for pb_id in pb_ids:
             number_name_dict.update(self.get_all_numbers(pb_id))  # [{Number: Name}, ..]
         return number_name_dict
 
-    def get_name_for_number_in_dict(self, number, number_name_dict, area_code=None):
-        """ Return first name found for a number_name_dict. Can also find it with/without area_code. """
-        if area_code:
-            # Try also to find an entry with or without the area_code
-            if number.startswith(area_code):
-                number_variant = number.replace(area_code, '')  # Number without area code
-            else:
-                number_variant = area_code + number  # Number with area code
-            numbers = [number, number_variant]
-        else:
-            numbers = [number]
+    def get_name_for_number_in_dict(self, number, number_name_dict, area_code=None, country_code=None):
+        """ Return first name found for a number_name_dict. Can also find it with/without area or country code. """
 
+        numbers = [number]
+
+        # Try also to find a phonebook entry with or without the country_code
+        if country_code:
+            if number.startswith(country_code):
+                numbers.append(number.replace(country_code, '0'))  # E.g.: 00497191 => 07191
+            else:
+                numbers.append(country_code + number)
+
+        # Try also to find a phonebook entry with or without the area_code
+        if area_code:
+            nr = number
+            if country_code and number.startswith(country_code):
+                nr = number.replace(country_code, '0')
+            if nr.startswith(area_code):
+                numbers.append(nr.replace(area_code, ''))
+            else:
+                numbers.append(area_code + nr)
+
+        # Return first match, or None if not found
         for number in numbers:
             if number in number_name_dict.keys():
                 return number_name_dict[number]
@@ -130,21 +144,30 @@ class Phonebook(FritzPhonebook):
 
 
 if __name__ == "__main__":
-
-    # ToDo: Config & init is still a mess
-    import sys
-
-    sys.path.append("..")
-    from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
-
     # Quick example how to use only
-    pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
-    contacts = pb.get_all_contacts(0)  # Exists always, but can be empty
+
+    # Initialize by using parameters from config file
+    fritzconn = FritzConn()
+    pb = Phonebook(fc=fritzconn)
+
+    # Print all numbers in whitelist, exists always, but can be empty
+    print("Names and numbers in whitelist (first phonebook):")
+    contacts = pb.get_all_contacts(0)
     for contact in contacts:
         print(f'{contact.name}: {contact.numbers}')
+
+    # Check that a number without area code is found with or without country and/or area code, needs a mockup later
+    numbers = pb.get_all_numbers_for_pb_ids([0])
+    nr = '808xxx'  # Set your local phone number here
+    area_code = '07191'
+    name1 = pb.get_name_for_number_in_dict('0049' + area_code[1:] + nr, numbers, area_code=area_code, country_code='0049')
+    name2 = pb.get_name_for_number_in_dict(area_code + nr, numbers, area_code=area_code, country_code='0049')
+    name3 = pb.get_name_for_number_in_dict(nr, numbers, area_code=area_code, country_code='0049')
+    print(name1, name2, name3)
+
+    # Try to add a number to whitelist which is already existing, should be skipped
+    result = pb.add_contact(0, 'CallBlockerTest', nr)
 
     # Works only if phonebook with id 2 exists and should not be executed too often
     # result = pb.add_contact(2, 'CallBlockerTest', '009912345')
     # result = pb.add_contact(2, 'CallBlockerTest-Umläut', '009912345', skip_existing=False)
-
-    # Could add a test if number with/without area_code is found in phonebook, but maybe needs a mockup/fake

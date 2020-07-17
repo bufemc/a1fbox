@@ -151,6 +151,8 @@ More links - if you want to dive deeper:
 #### Planning
 
 ToDo and/or further planning (pb = phonebook):
+- Numbers in phonebooks cannot only have local area prefix (or country?) code, but also spaces like "<prefix> <number>",
+    when retrieving remove spaces (and maybe if same country code)
 - Architecture pains: should fritzconn be passed if required, and abstraction layers be used?
 - When caller uses CLIR there is no number, what should happen, e.g. extra state CLIR, should be blocked (is it possible?) or not
 - When caller uses country code from abroad, should be blocked or not (blocking action should go in extra method)

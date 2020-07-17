@@ -1,7 +1,9 @@
+#!/usr/bin/python3
+
 import logging
 from enum import Enum
 
-# from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
+from fritzconn import FritzConn
 from callinfo import CallInfo, CallInfoType
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 from callprefix import CallPrefix
@@ -77,7 +79,7 @@ class CallBlockerLog(Log):
 class CallBlocker:
     """ Parse call monitor, examine RING event's phone number. """
 
-    def __init__(self, whitelist_pbids, blacklist_pbids, blocklist_pbid, blockname_prefix='',
+    def __init__(self, fc, whitelist_pbids, blacklist_pbids, blocklist_pbid, blockname_prefix='',
                  min_score=6, min_comments=3, block_anon=False, block_abroad=False, logger=None):
         """ Provide a whitelist phonebook (normally first index 0) and where blocked numbers should go into. """
         self.whitelist_pbids = whitelist_pbids
@@ -90,7 +92,7 @@ class CallBlocker:
         self.block_abroad = block_abroad  # ToDo
         self.logger = logger
         print("Retrieving data from Fritz!Box..")
-        self.pb = Phonebook(address=FRITZ_IP_ADDRESS, user=FRITZ_USERNAME, password=FRITZ_PASSWORD)
+        self.pb = Phonebook(fc=fc)
         fritz_model = self.pb.fc.modelname
         fritz_os = self.pb.fc.system_version
         self.cp = CallPrefix(fc=self.pb.fc)
@@ -169,24 +171,22 @@ class CallBlocker:
 
 
 if __name__ == "__main__":
-
-    # ToDo: Config & init is still a mess
-    import sys
-    sys.path.append("..")
-    from config import FRITZ_IP_ADDRESS, FRITZ_USERNAME, FRITZ_PASSWORD
-
     # Quick example how to use only
+
+    # Initialize by using parameters from config file
+    fritzconn = FritzConn()
+
     # There are two loggers. cm_log logs the raw line from call monitor of Fritzbox,
     # cb_log logs the actions of the call blocker. The CallMonitor uses the
     # CallBlocker and it's parse_and_examine_line method to examine the raw line.
 
-    # ToDo: could also define which rating method should be used?
+    # Idea: could also define which rating method should be used?
 
     cb_log = CallBlockerLog(daily=True, anonymize=False)
-    cb = CallBlocker(whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2,
+    cb = CallBlocker(fc=fritzconn, whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2,
                      blockname_prefix='[Spam] ', min_score=6, min_comments=2, logger=cb_log.log_line)
     cm_log = CallMonitorLog(daily=True, anonymize=False)
-    cm = CallMonitor(host=FRITZ_IP_ADDRESS, logger=cm_log.log_line, parser=cb.parse_and_examine_line)
+    cm = CallMonitor(host=fritzconn.address, logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 
     # Provoke whitelist test
     # test_line = '17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)

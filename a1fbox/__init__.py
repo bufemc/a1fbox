@@ -1,4 +1,5 @@
-__all__ = ["CallInfo", "CallInfoType",
+__all__ = ["FritzConn",
+           "CallInfo", "CallInfoType",
            "CallPrefix", "CallPrefixType",
            "CallMonitor", "CallMonitorLog", "CallMonitorLine", "CallMonitorType",
            "CallBlocker", "CallBlockerLog", "CallBlockerLine", "CallBlockerRate",
