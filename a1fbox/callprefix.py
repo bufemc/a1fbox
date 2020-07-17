@@ -55,9 +55,6 @@ class CallPrefix:
         """ Read the area codes into a dict. ONB provided by BNetzA as CSV, separated by ';', RNB created manually. """
         self.prefix_dict = dict()
 
-
-        print(os.path.join(os.path.dirname(__file__), '../data/onb.csv'))
-
         # Landline prefixes for Germany, including CSV header, see https://tinyurl.com/y7648pc9
         with open(ONB_FILE, encoding='utf-8') as csvfile:
             csvreader = csv.reader(csvfile, delimiter=';')
