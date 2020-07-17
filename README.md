@@ -1,26 +1,34 @@
 # Airport1 Fritzbox Tools
 
 Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handling, automated call blocking.
+All is still in state _EXPERIMENTAL_ (WIP, "API" is not final).
 
 ### Ingredients
+- FritzConn: small helper to use only one FritzConnection for all modules 
+    - ```config.py``` file in the base directory defines the paramters to connect
+
 - CallMonitor: connect and listen to call monitor on port 1012 of the Fritzbox
     - CallMonitorLine: line parser and phone number anonymizer
     - CallMonitorLog: optional logger for lines, either one big file or daily files
 
-- CallBlocker: _EXPERIMENTAL_ (WIP, "API" is not final) - listen to call monitor and check RING events 
+- CallBlocker: listen to call monitor and check RING events 
     - CallBlockerLine: line parser and phone number/name anonymizer
     - CallBlockerLog: optional logger for actions, either one big file or daily files
 
 - CallInfo: examine an unknown phone number for rating or naming
     - CallInfoType: e.g. Tellows for scoring or RevSearch for reverse search via dasOertliche
 
-- CallPrefix: retrieve own area code and country code from Fritzbox or from a phone number, resolve name, using data:
+- CallPrefix: retrieve and handle own area code and country code, resolve name, using data:
     - ONB: (German) "Ortsnetzbereiche", area codes for Germany for landline numbers (from BNetzA)
     - RNB: (German) "Mobile Dienste, zugeteilte RNB", codes for mobile numbers (from BNetzA)
     - countryio-phone / -names: country codes and names (from country.io)
-    
+
+- CallList: is not a module or class yet!
+    - Examples only, how to traverse and resolve last 400 calls
+         
 - Phonebook: inherited and extended from [fritzconnection]'s FritzPhonebook
-    - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55] 
+    - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55], but remove internal numbers
+    - Find a name for a number in phonebook, even if with/without area or country code 
     - Add contact to phonebook, see [fc-issue-50]    
     
 ### Setup
@@ -62,7 +70,7 @@ MIT
 If you search an alternative in PHP for automated call blocking, check out [fbcallrouter]. 
 This project by Volker Pueschel aka blacksenator gave me some impulses.  
 
-#### Data folder: ONB, RNB
+#### Data folder: ONB, RNB, CountryIO
 
 Like previous mentioned project, this uses _ONB_ = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen) aka local area codes. 
 The list used is from the "BNetzA" (German "Bundesnetzagentur") and should be valid for a limited period of time. 

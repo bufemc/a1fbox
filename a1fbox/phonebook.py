@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import logging
 import html
-from fritzconn import FritzConn
+import logging
 
+from fritzconn import FritzConn
 from fritzconnection.lib.fritzphonebook import FritzPhonebook
 
 logging.basicConfig(level=logging.WARNING)
@@ -59,6 +59,8 @@ class Phonebook(FritzPhonebook):
     def add_contact(self, pb_id, name, number, skip_existing=True):
         """ Bad style, but works. Should use a fritzconnection's Contact object and Soaper later. """
 
+        # Idea: could additionally remove spaces like "<area code> <number>" and prevent to add no-numbers like "808xxx"
+
         # Temporary workaround to cover the Umlaut problem - still not solved perfectly!
         # https://stackoverflow.com/questions/701704/convert-html-entities-to-unicode-and-vice-versa
         # Creates correct &#228; for ä, however Fritzbox displays Ã¤ (&auml; would work instead)
@@ -67,7 +69,7 @@ class Phonebook(FritzPhonebook):
         arg = {'NewPhonebookID': pb_id,
                'NewPhonebookEntryID': '',
                'NewPhonebookEntryData':
-                   # f'<?xml version="1.0" encoding="utf-8"?>'
+               # f'<?xml version="1.0" encoding="utf-8"?>'
                    f'<Envelope>'  # xmlns:s="http://www.w3.org/2003/05/soap-envelope" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
                    f'<contact>'
                    f'<category>0</category>'
@@ -108,7 +110,7 @@ class Phonebook(FritzPhonebook):
 
     def get_all_numbers_for_pb_ids(self, pb_ids):
         """ Retrieve and concatenate number-name-dicts for several phonebook ids. """
-        assert(type(pb_ids) == list)
+        assert (type(pb_ids) == list)
         number_name_dict = dict()
         for pb_id in pb_ids:
             number_name_dict.update(self.get_all_numbers(pb_id))  # [{Number: Name}, ..]
@@ -146,28 +148,34 @@ class Phonebook(FritzPhonebook):
 if __name__ == "__main__":
     # Quick example how to use only
 
+    do_tests = {'print_whitelist': True, 'is_number_in_whitelist': True, 'add_numbers': False}
+
     # Initialize by using parameters from config file
     fritzconn = FritzConn()
     pb = Phonebook(fc=fritzconn)
 
-    # Print all numbers in whitelist, exists always, but can be empty
-    print("Names and numbers in whitelist (first phonebook):")
-    contacts = pb.get_all_contacts(0)
-    for contact in contacts:
-        print(f'{contact.name}: {contact.numbers}')
+    if do_tests['print_whitelist']:
+        # Print all numbers in whitelist, exists always, but can be empty
+        print("Names and numbers in whitelist (first phonebook):")
+        contacts = pb.get_all_contacts(0)
+        for contact in contacts:
+            print(f'{contact.name}: {contact.numbers}')
 
-    # Check that a number without area code is found with or without country and/or area code, needs a mockup later
-    numbers = pb.get_all_numbers_for_pb_ids([0])
-    nr = '808xxx'  # Set your local phone number here
-    area_code = '07191'
-    name1 = pb.get_name_for_number_in_dict('0049' + area_code[1:] + nr, numbers, area_code=area_code, country_code='0049')
-    name2 = pb.get_name_for_number_in_dict(area_code + nr, numbers, area_code=area_code, country_code='0049')
-    name3 = pb.get_name_for_number_in_dict(nr, numbers, area_code=area_code, country_code='0049')
-    print(name1, name2, name3)
+    nr = '808xxx'  # Set a local phone number here, used for the next two tests
 
-    # Try to add a number to whitelist which is already existing, should be skipped
-    result = pb.add_contact(0, 'CallBlockerTest', nr)
+    if do_tests['is_number_in_whitelist']:
+        # Check that a number without area code is found with or without country and/or area code, needs a mockup later
+        numbers = pb.get_all_numbers_for_pb_ids([0])
+        area_code = '07191'
+        name1 = pb.get_name_for_number_in_dict('0049' + area_code[1:] + nr, numbers, area_code=area_code, country_code='0049')
+        name2 = pb.get_name_for_number_in_dict(area_code + nr, numbers, area_code=area_code, country_code='0049')
+        name3 = pb.get_name_for_number_in_dict(nr, numbers, area_code=area_code, country_code='0049')
+        print(name1, name2, name3)
 
-    # Works only if phonebook with id 2 exists and should not be executed too often
-    # result = pb.add_contact(2, 'CallBlockerTest', '009912345')
-    # result = pb.add_contact(2, 'CallBlockerTest-Umläut', '009912345', skip_existing=False)
+    if do_tests['add_numbers']:
+        # Try to add a number to whitelist which is already existing, should be skipped
+        result = pb.add_contact(0, 'CallBlockerTest', nr)
+
+        # Works only if phonebook with id 2 exists and should not be executed too often
+        result = pb.add_contact(2, 'CallBlockerTest', '009912345')
+        result = pb.add_contact(2, 'CallBlockerTest-Umläut', '009912345', skip_existing=False)
