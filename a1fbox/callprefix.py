@@ -1,11 +1,16 @@
 #!/usr/bin/python3
 
+import os
 import csv
 import logging
 from enum import Enum
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
+
+
+ONB_FILE = os.path.join(os.path.dirname(__file__), '../data/onb.csv')
+RNB_FILE = os.path.join(os.path.dirname(__file__), '../data/rnb.csv')
 
 
 class CallPrefixType(Enum):
@@ -50,8 +55,11 @@ class CallPrefix:
         """ Read the area codes into a dict. ONB provided by BNetzA as CSV, separated by ';', RNB created manually. """
         self.prefix_dict = dict()
 
+
+        print(os.path.join(os.path.dirname(__file__), '../data/onb.csv'))
+
         # Landline prefixes for Germany, including CSV header, see https://tinyurl.com/y7648pc9
-        with open('../data/onb.csv', encoding='utf-8') as csvfile:
+        with open(ONB_FILE, encoding='utf-8') as csvfile:
             csvreader = csv.reader(csvfile, delimiter=';')
             for i, row in enumerate(csvreader):
                 if i == 0:
@@ -67,7 +75,7 @@ class CallPrefix:
                     self.prefix_dict[area_code] = {'code': area_code, 'name': name, 'active': active, 'mobile': False}
 
         # Mobile prefixes for Germany, no CSV header
-        with open('../data/rnb.csv', encoding='utf-8') as csvfile:
+        with open(RNB_FILE, encoding='utf-8') as csvfile:
             csvreader = csv.reader(csvfile, delimiter=';')
             for row in csvreader:
                 if len(row) == 2:

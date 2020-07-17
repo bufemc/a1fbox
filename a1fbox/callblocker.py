@@ -1,16 +1,16 @@
 #!/usr/bin/python3
 
 import logging
+import os
+import sys
 from enum import Enum
 
-from fritzconn import FritzConn
 from callinfo import CallInfo, CallInfoType
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 from callprefix import CallPrefix
+from fritzconn import FritzConn
 from phonebook import Phonebook
 
-# Better solution required!
-import sys, os
 sys.path.append(os.path.dirname(__file__))
 from log import Log
 from utils import anonymize_number

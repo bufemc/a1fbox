@@ -1,11 +1,12 @@
 # Airport1 Fritzbox Tools
 
 Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handling, automated call blocking.
-All is still in state _EXPERIMENTAL_ (WIP, "API" is not final).
+All is still in state _EXPERIMENTAL_ (WIP, "API" is not final). Requires ```requests``` and
+relies on the package [fritzconnection].
 
 ### Ingredients
 - FritzConn: small helper to use only one FritzConnection for all modules 
-    - ```config.py``` file in the base directory defines the paramters to connect
+    - ```config.py``` file defines the paramters to connect (DO NEVER COMMIT/SHARE YOUR PASSWORD!)
 
 - CallMonitor: connect and listen to call monitor on port 1012 of the Fritzbox
     - CallMonitorLine: line parser and phone number anonymizer
@@ -27,9 +28,9 @@ All is still in state _EXPERIMENTAL_ (WIP, "API" is not final).
     - Examples only, how to traverse and resolve last 400 calls
          
 - Phonebook: inherited and extended from [fritzconnection]'s FritzPhonebook
-    - Retrieve all contacts from a phonebook, see [fc-issue-53], [fc-issue-55], but remove internal numbers
+    - Retrieve all contacts from a phonebook, but remove internal numbers, see [fc-issue-53], [fc-issue-55]
     - Find a name for a number in phonebook, even if with/without area or country code 
-    - Add contact to phonebook, see [fc-issue-50]    
+    - Add contact to phonebook, see [fc-issue-50], but Umlauts are still a pain    
     
 ### Setup
 
@@ -57,14 +58,6 @@ MIT
 
 
 ### Backstage
-
-#### Issues
-- CallMonitor
-    - socket might stop sending data after a while, should work now by using TCP keep alive, see below
-    - socket shutdown by stopping might lead to BrokenPipe exception in listener
-- CallBlocker
-    - still very basic, missing: handling for failing requests, area_code determination, logging
-- Missing unit tests and a better package structure
 
 #### Alternatives
 If you search an alternative in PHP for automated call blocking, check out [fbcallrouter]. 
@@ -156,7 +149,7 @@ More links - if you want to dive deeper:
 - https://stackoverflow.com/questions/35861484/how-to-know-the-if-the-socket-connection-is-closed-in-python
 - https://tewarid.github.io/2013/08/16/handling-tcp-keep-alive.html
 
-#### Planning
+#### Planning and issues
 
 ToDo and/or further planning (pb = phonebook):
 - Numbers in phonebooks cannot only have local area prefix (or country?) code, but also spaces like "<prefix> <number>",
@@ -184,6 +177,13 @@ ToDo and/or further planning (pb = phonebook):
 - Add update (+ delete?) contact method e.g. to improve entries to provide better names
 - Replace phonebook contacts with missing local area code with full numbers
 - Documentation: how to set up for a Raspberry Pi, e.g. as a service, how to set up a bot for telegram channel..
+- Old notes:
+    - CallMonitor
+        - socket might stop sending data after a while, should work now by using TCP keep alive, see below
+        - socket shutdown by stopping might lead to BrokenPipe exception in listener
+    - CallBlocker
+        - still very basic, missing: handling for failing requests, area_code determination, logging
+    - Missing unit tests and a better package structure
 
 
 [Airport1]: https://www.airport1.de/

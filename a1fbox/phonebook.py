@@ -167,7 +167,8 @@ if __name__ == "__main__":
         # Check that a number without area code is found with or without country and/or area code, needs a mockup later
         numbers = pb.get_all_numbers_for_pb_ids([0])
         area_code = '07191'
-        name1 = pb.get_name_for_number_in_dict('0049' + area_code[1:] + nr, numbers, area_code=area_code, country_code='0049')
+        name1 = pb.get_name_for_number_in_dict('0049' + area_code[1:] + nr, numbers, area_code=area_code,
+                                               country_code='0049')
         name2 = pb.get_name_for_number_in_dict(area_code + nr, numbers, area_code=area_code, country_code='0049')
         name3 = pb.get_name_for_number_in_dict(nr, numbers, area_code=area_code, country_code='0049')
         print(name1, name2, name3)

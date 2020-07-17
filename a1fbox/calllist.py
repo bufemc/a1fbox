@@ -2,12 +2,12 @@
 
 from collections import Counter
 from time import sleep
-from callprefix import CallPrefix
+
 from callinfo import CallInfo
-from phonebook import Phonebook
+from callprefix import CallPrefix
 from fritzconn import FritzConn
 from fritzconnection.lib.fritzcall import FritzCall
-
+from phonebook import Phonebook
 
 if __name__ == "__main__":
     # Quick example how to use only
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     print(f'\nAll {len(calls)} calls, uniqued {len(numbers)}:')
     print(numbers)
 
-    anylist = pb.get_all_numbers_for_pb_ids([0,1,2])  # White- or blacklist
+    anylist = pb.get_all_numbers_for_pb_ids([0, 1, 2])  # White- or blacklist
 
     print('\nWhite- or blacklisted:')
     unknowns = set()
