@@ -3,7 +3,7 @@
 # This very basic example listens to the call monitor of the Fritz!Box.
 # It does not need to utilize FritzConn(ection), just the ip address is enough.
 
-# REQUIRED: To enable call monitor dial ```#96*5*``` - and to disable dial ```#96*4```.
+# REQUIRED: To enable call monitor dial #96*5* and to disable dial #96*4.
 
 # To see some action e.g. call from intern phone 1 to phone 2,
 # or use your mobile phone to call the landline. This will print and log the calls.

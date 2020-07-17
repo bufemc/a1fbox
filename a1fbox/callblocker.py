@@ -185,6 +185,7 @@ if __name__ == "__main__":
     cb_log = CallBlockerLog(daily=True, anonymize=False)
     cb = CallBlocker(fc=fritzconn, whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2,
                      blockname_prefix='[Spam] ', min_score=6, min_comments=2, logger=cb_log.log_line)
+
     cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(host=fritzconn.address, logger=cm_log.log_line, parser=cb.parse_and_examine_line)
 

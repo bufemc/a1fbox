@@ -5,7 +5,8 @@
 # If the score is too bad it will block the call (for the next time) by adding it
 # to the blacklisted (has to be configured to do so!) phonebook.
 
-# REQUIRED: To enable call monitor dial ```#96*5*``` - and to disable dial ```#96*4```.
+# REQUIRED: To enable call monitor dial #96*5* and to disable dial #96*4.
+# REQUIRED: A phonebook id where bad calls should be added. Configure it in Fritzbox to decline calls!
 
 # To see some action e.g. call from intern phone 1 to phone 2,
 # or use your mobile phone to call the landline. This will print and log the calls.
@@ -28,5 +29,6 @@ if __name__ == "__main__":
     cb_log = CallBlockerLog(daily=True, anonymize=False)
     cb = CallBlocker(fc=fritzconn, whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2,
                      blockname_prefix='[Spam] ', min_score=6, min_comments=2, logger=cb_log.log_line)
+
     cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(host=fritzconn.address, logger=cm_log.log_line, parser=cb.parse_and_examine_line)

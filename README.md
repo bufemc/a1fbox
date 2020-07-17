@@ -1,8 +1,30 @@
 # Airport1 Fritzbox Tools
 
-Fritz!Box tool set by [Airport1], e.g. parse the call monitor, phonebook handling, automated call blocking.
-All is still in state _EXPERIMENTAL_ (WIP, "API" is not final). Requires ```requests``` and
-relies on the package [fritzconnection].
+<img alt="Python versions" src="https://camo.githubusercontent.com/4b34d92404f5a39a6b41ee03b34a2926bbc70db8/68747470733a2f2f696d672e736869656c64732e696f2f707970692f707976657273696f6e732f667269747a636f6e6e656374696f6e2e737667"/> <img src="https://camo.githubusercontent.com/232174f26bac5f71ba94b19698d7374192fbe304/68747470733a2f2f696d672e736869656c64732e696f2f707970692f6c2f667269747a636f6e6e656374696f6e2e737667"/><p/>
+
+Short name **a1fbox**. This is a Fritz!Box tool set by [Airport1]. E.g. parse the call monitor, phonebook handling, automated call blocking.
+All is still in state _EXPERIMENTAL_ (work in progress, "API" is not final). Use at own risk.
+
+### Setup
+
+Use ```pip install -r requirements.txt``` to install dependencies. 
+Adjust ```config.py``` to your Fritz!Box settings (hint: you can also set ```"fritz.box"``` 
+instead of an IP). 
+For an example implementation run ```python example.py```.
+
+### Requirements
+- Python >= 3.6 - as e.g. f'Hello, {name}!' is used
+- Packages ```requests``` and [fritzconnection] by Klaus Bremer aka kbr 
+- A Fritz!Box, reachable within your network with your credentials, and if using call monitor or blocker:
+    - enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
+    - either standard or dedicated user with password (set in ```config.py```) and enough permissions
+    - an additional phonebook for cold calls, configured to block incoming numbers
+
+### Description
+Idea was to create a call blocker for cold calls. I tried to build modules that were as independent as possible,
+having same naming, even same logging scheme. So they could be used as building blocks, combined in different ways.
+So you could run the call monitor alone, but also combined with the call blocker. Or you could just do rating for
+phone numbers or reverse search. Or add contacts to your phonebook. Feedback is highly appreciated.
 
 ### Ingredients
 - FritzConn: small helper to use only one FritzConnection for all modules 
@@ -32,27 +54,6 @@ relies on the package [fritzconnection].
     - Find a name for a number in phonebook, even if with/without area or country code 
     - Add contact to phonebook, see [fc-issue-50], but Umlauts are still a pain    
     
-### Setup
-
-Use ```pip install -r requirements.txt``` to install dependencies. 
-Adjust ```config.py``` to your Fritz!Box settings (hint: you can also set ```"fritz.box"``` 
-instead of an IP). 
-For an example implementation you could try to run ``` python example.py ```.
-
-### Requirements
-- Python >= 3.6 - as e.g. f'Hello, {name}!' is used
-- requests, [fritzconnection] by Klaus Bremer aka kbr - for retrieving and manipulating phonebooks 
-- Fritz!Box with
-    - enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
-    - either standard or dedicated user with password (set in ```config.py```) and enough permissions
-    - an additional phonebook for cold calls, configured to block incoming numbers
-
-### Description
-Idea was to create a call blocker for cold calls. I tried to build modules that were as independent as possible,
-having same naming, even same logging scheme. So they could be used as building blocks, combined in different ways.
-So you could run the call monitor alone, but also combined with the call blocker. Or you could just do rating for
-phone numbers or reverse search. Or add contacts to your phonebook. Feedback is highly appreciated.
-
 ### License
 MIT
 
