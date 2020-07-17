@@ -12,8 +12,7 @@ from enum import Enum
 
 sys.path.append(os.path.dirname(__file__))
 from fritzconn import FritzConn
-from utils import anonymize_number
-from log import Log
+from utils import Log, anonymize_number
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)

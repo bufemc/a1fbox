@@ -5,15 +5,16 @@ import os
 import sys
 from enum import Enum
 
-from callinfo import CallInfo, CallInfoType
-from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
-from callprefix import CallPrefix
 from fritzconn import FritzConn
 from phonebook import Phonebook
 
+from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
+
+from callinfo import CallInfo, CallInfoType
+from callprefix import CallPrefix
+
 sys.path.append(os.path.dirname(__file__))
-from log import Log
-from utils import anonymize_number
+from utils import Log, anonymize_number
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)

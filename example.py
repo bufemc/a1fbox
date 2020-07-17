@@ -15,7 +15,7 @@ if __name__ == "__main__":
     print("To stop enter '!' (exclamation mark) followed by ENTER key..")
 
     cm_log = CallMonitorLog(daily=True, anonymize=False)
-    cm = CallMonitor(host=FRITZ_IP_ADDRESS, logger=cm_log)
+    cm = CallMonitor(host=FRITZ_IP_ADDRESS, logger=cm_log.log_line)
 
     key = ""
     while key != "!":
