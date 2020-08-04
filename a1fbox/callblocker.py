@@ -49,14 +49,18 @@ class CallBlockerLine:
         self.datetime, self.rate, self.method, self.caller, self.name, *more = raw_line.strip().split(';', 8)
         self.name = self.name.strip('"')  # "ab"cd" => ab"cd
         self.date, self.time = self.datetime.split(' ')
-        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.TEL_AND_REV.value]:
+        if int(self.method) in [CallInfoType.WEMGEHOERT_SCORE.value]:
+            self.score = more[0]
+        elif int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.CASCADE.value]:
             self.score, self.comments, self.searches = more[0], more[1], more[2]
 
     def __str__(self):
         """ Pretty print a line from call blocker (ignoring method), by considering the method. """
         # caller = self.caller if self.caller else 'CLIR'
         start = f'date:{self.date} time:{self.time} rate:{self.rate} caller:{self.caller} name:{self.name}'
-        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.TEL_AND_REV.value]:
+        if int(self.method) in [CallInfoType.WEMGEHOERT_SCORE.value]:
+            return f'{start} score:{self.score}'
+        elif int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.CASCADE.value]:
             return f'{start} score:{self.score} comments:{self.comments} searches:{self.searches}'
         else:
             return start
@@ -148,7 +152,7 @@ class CallBlocker:
 
                 else:
                     ci = CallInfo(full_number)
-                    ci.get_tellows_and_revsearch()
+                    ci.get_cascade_score()
                     # Adapt to logging style of call monitor. Task of logger to parse the values to keys/names?
                     score_str = f'"{ci.name}";{ci.score};{ci.comments};{ci.searches};'
 

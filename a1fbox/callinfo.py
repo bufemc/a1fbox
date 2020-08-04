@@ -14,31 +14,38 @@ class CallInfoType(Enum):
 
     INIT = 0
     TELLOWS_SCORE = 1
-    TEL_AND_REV = 2
-    REV_SEARCH = 3
+    WEMGEHOERT_SCORE = 2
+    REV_SEARCH = 100
+    CASCADE = 101
 
 
 class CallInfo:
     """ Retrieve details for a phone number. Currently scoring via Tellows or naming a number via reverse search. """
 
-    def __init__(self, number, unknown_name='UNKNOWN'):
+    def __init__(self, number, unknown_name='UNKNOWN', unknown_location='UNKNOWN'):
         """ Might enrich information about a phone number. Caches not used yet. """
         self.number = number
         self.name = unknown_name
+        self.location = unknown_location
         self.method = CallInfoType.INIT.value
 
-    def get_tellows_and_revsearch(self):
-        """ Combine tellows and rev search. If name of rev search is longer than tellows, it will be used. """
+    def get_cascade_score(self):
+        """ Combine tellows, wemgehoert and rev search. If tellows score is <= 5, try also wemgehoert.de.
+        If name of rev search is longer than the one returned from tellows, first will be used. """
         self.get_revsearch_info()
         rev_name = self.name
         self.get_tellows_score()
         if len(rev_name) > len(self.name):
             self.name = rev_name
-        self.method = CallInfoType.TEL_AND_REV.value
+        # If Tellows has no information or the name is UNKNOWN, try also WemGehoert.de
+        if self.score == 5 and self.name == "UNKNOWN":
+            self.get_wemgehoert_score()
+        self.method = CallInfoType.CASCADE.value
 
     def get_tellows_score(self):
         """ Do scoring for a phone number via Tellows - extract score, comments, build a name:
         https://blog.tellows.de/2011/07/tellows-api-fur-die-integration-in-eigene-programme/ """
+        self.method = CallInfoType.TELLOWS_SCORE.value
         url = f'http://www.tellows.de/basic/num/{self.number}?json=1&partner=test&apikey=test123'
         try:
             req = requests.get(url)
@@ -59,13 +66,39 @@ class CallInfo:
                             continue
                         caller_name = name_count['name'] + ', '
                         break  # Stop for first meaningful name
-            self.name = f'{caller_name}{self.location}'
-            self.method = CallInfoType.TELLOWS_SCORE.value
+            # Do not set just the location, this is the task of ONB/RNB etc.
+            if caller_name:
+                self.name = f'{caller_name}{self.location}'
+        except requests.exceptions.HTTPError as err:
+            log.warning(err)
+
+    def get_wemgehoert_score(self):
+        """ Do scoring for a phone number via wemgehoert.de - extract percentage as score. """
+        self.method = CallInfoType.WEMGEHOERT_SCORE.value
+        url = f'https://www.wemgehoert.de/nummer/{self.number}'
+
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
+        try:
+            req = requests.get(url, headers=headers)
+            req.raise_for_status()
+            content = req.text
+            # Extract 84 from e.g. <div id="progress-bar-inner" class="progress-bar-rank5">84</div>
+            str_begin = '<div id="progress-bar-inner" class="progress-bar-rank'  # followed by 1"> or 5"> etc.
+            str_end = '</div>'
+            pos_1 = content.find(str_begin)
+            if pos_1 != -1:
+                content = content[pos_1 + len(str_begin) + 3:]
+                pos_n = content.find(str_end)
+                if pos_n != -1:
+                    content = content[:pos_n]
+                    self.score = round(int(content) / 10)  # e.g. 84% becomes score = 8
         except requests.exceptions.HTTPError as err:
             log.warning(err)
 
     def get_revsearch_info(self):
         """ Do reverse search via DasOertliche, currently ugly parsing, which might fail if name has commas? """
+        self.method = CallInfoType.REV_SEARCH.value
         url = f'https://www.dasoertliche.de/Controller?form_name=search_inv&ph={self.number}'
         try:
             req = requests.get(url)
@@ -84,14 +117,14 @@ class CallInfo:
                     city = parts[5].strip("' ")  # "ci" in source view
                     name = parts[14].strip("' ")  # "na" in source view
                     self.name = name + ", " + city
-                    self.method = CallInfoType.REV_SEARCH.value
         except requests.exceptions.HTTPError as err:
             log.warning(err)
 
     def __str__(self):
         """ To relevant properties shortened output. """
-        start = f'number:{self.number} name:{self.name}'
-        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.TEL_AND_REV.value]:
+        start = f'number:{self.number} name:{self.name} location:{self.location}'
+        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.WEMGEHOERT_SCORE.value,
+                                CallInfoType.CASCADE.value]:
             return f'{start} score:{self.score}'
         else:
             return start
@@ -99,16 +132,20 @@ class CallInfo:
 
 if __name__ == "__main__":
     # Quick example how to use only
-    number = "022189920"  # BzGA
+    # Warning: the object ci is re-used here all the time, but not reverted, should be solved better in unit tests.
+    number = "004922189920"  # BzGA
     ci = CallInfo(number)
     assert (ci.method == CallInfoType.INIT.value)
     print(ci)
     ci.get_tellows_score()
     assert (ci.method == CallInfoType.TELLOWS_SCORE.value)
     print(ci)
+    ci.get_wemgehoert_score()
+    assert (ci.method == CallInfoType.WEMGEHOERT_SCORE.value)
+    print(ci)
     ci.get_revsearch_info()
     assert (ci.method == CallInfoType.REV_SEARCH.value)
     print(ci)
-    ci.get_tellows_and_revsearch()
-    assert (ci.method == CallInfoType.TEL_AND_REV.value)
+    ci.get_cascade_score()
+    assert (ci.method == CallInfoType.CASCADE.value)
     print(ci)

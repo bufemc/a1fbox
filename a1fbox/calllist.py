@@ -55,6 +55,6 @@ if __name__ == "__main__":
     print('\nResolving Unknowns:')
     for unknown in unknowns:
         ci = CallInfo(unknown)
-        ci.get_tellows_and_revsearch()
+        ci.get_cascade_score()
         print(ci)
-        sleep(5)  # Anti-DDOS for tellows, otherwise you get blocked
+        sleep(10)  # Anti-DDOS needed for tellows and wemgehoert, otherwise you get blocked or captcha
