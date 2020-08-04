@@ -8,6 +8,9 @@ import requests
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
 
+UNKNOWN_NAME = 'UNKNOWN'
+UNKNOWN_LOCATION = 'UNKNOWN'
+
 
 class CallInfoType(Enum):
     """ Which method has been used to enrich the data, if none it's 0. """
@@ -22,11 +25,11 @@ class CallInfoType(Enum):
 class CallInfo:
     """ Retrieve details for a phone number. Currently scoring via Tellows or naming a number via reverse search. """
 
-    def __init__(self, number, unknown_name='UNKNOWN', unknown_location='UNKNOWN'):
+    def __init__(self, number, name=None, location=None):
         """ Might enrich information about a phone number. Caches not used yet. """
         self.number = number
-        self.name = unknown_name
-        self.location = unknown_location
+        self.name = name if name else UNKNOWN_NAME
+        self.location = location if location else UNKNOWN_LOCATION
         self.method = CallInfoType.INIT.value
 
     def get_cascade_score(self):
@@ -38,7 +41,7 @@ class CallInfo:
         if len(rev_name) > len(self.name):
             self.name = rev_name
         # If Tellows has no information or the name is UNKNOWN, try also WemGehoert.de
-        if self.score == 5 and self.name == "UNKNOWN":
+        if self.score == 5 and self.name == UNKNOWN_NAME:
             self.get_wemgehoert_score()
         self.method = CallInfoType.CASCADE.value
 
@@ -57,18 +60,22 @@ class CallInfo:
             self.searches = obj['searches']
             self.location = obj['location']
 
-            # Build smarter name, iff name can be retrieved: "name, location"
             caller_name = ''
-            if 'callerTypes' in obj:
-                if 'caller' in obj['callerTypes']:
-                    for name_count in obj['callerTypes']['caller']:
-                        if name_count['name'] == 'Unbekannt':
-                            continue
-                        caller_name = name_count['name'] + ', '
-                        break  # Stop for first meaningful name
+            if 'numberDetails' in obj and 'name' in obj['numberDetails']:
+                caller_name = obj['numberDetails']['name']
+
+            # Build smarter name, iff name can be retrieved: "name, location"
+            if not caller_name:
+                if 'callerTypes' in obj:
+                    if 'caller' in obj['callerTypes']:
+                        for name_count in obj['callerTypes']['caller']:
+                            if name_count['name'] == 'Unbekannt':
+                                continue
+                            caller_name = name_count['name']
+                            break  # Stop for first meaningful name
             # Do not set just the location, this is the task of ONB/RNB etc.
             if caller_name:
-                self.name = f'{caller_name}{self.location}'
+                self.name = f'{caller_name}, {self.location}'
         except requests.exceptions.HTTPError as err:
             log.warning(err)
 
