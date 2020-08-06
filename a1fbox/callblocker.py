@@ -10,7 +10,7 @@ from phonebook import Phonebook
 
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
 
-from callinfo import CallInfo, CallInfoType
+from callinfo import CallInfo, CallInfoType, UNKNOWN_NAME
 from callprefix import CallPrefix
 
 sys.path.append(os.path.dirname(__file__))
@@ -105,7 +105,9 @@ class CallBlocker:
         self.whitelist = self.pb.get_all_numbers_for_pb_ids(self.whitelist_pbids)
         self.blacklist = self.pb.get_all_numbers_for_pb_ids(self.blacklist_pbids)
         print(f'Call blocker initialized.. '
-              f'country_code:{self.cp.country_code} area_code:{self.cp.area_code} area_name:{self.cp.area_code_name} '
+              f'model:{fritz_model} ({fritz_os}) '
+              f'country:{self.cp.country_code_name} ({self.cp.country_code}) '
+              f'area:{self.cp.area_code_name} ({self.cp.area_code}) '
               f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
 
     def parse_and_examine_line(self, raw_line):
@@ -114,7 +116,8 @@ class CallBlocker:
         cm_line = CallMonitorLine(raw_line)
         print(cm_line)
 
-        if cm_line.type == CallMonitorType.RING.value:
+        # New: also examine calls from inside to outside (CallMonitorType.CALL)
+        if cm_line.type in [CallMonitorType.RING.value, CallMonitorType.CALL.value]:
             dt = cm_line.datetime  # Use same datetime for exact match
 
             number = cm_line.caller
@@ -153,17 +156,28 @@ class CallBlocker:
                 else:
                     ci = CallInfo(full_number)
                     ci.get_cascade_score()
+
+                    # If there is no other information try at least to detect country or area
+                    if ci.name == UNKNOWN_NAME:
+                        name = self.cp.get_prefix_name(full_number)
+                        if name:
+                            ci.name = name
+
                     # Adapt to logging style of call monitor. Task of logger to parse the values to keys/names?
                     score_str = f'"{ci.name}";{ci.score};{ci.comments};{ci.searches};'
 
                     if ci.score >= self.min_score and ci.comments >= self.min_comments:
                         name = self.blockname_prefix + ci.name
-                        # ToDo: should go in extra method
-                        result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
-                        if result:  # If not {} returned, it's an error
-                            log.warning("Adding to phonebook failed:")
-                            print(result)
-                        rate = CallBlockerRate.BLOCK.value
+                        # Precaution: should only happen if this is a call from outside, not from inside
+                        if cm_line.type == CallMonitorType.RING.value:
+                            # ToDo: should go in extra method
+                            result = self.pb.add_contact(self.blocklist_pbid, name, full_number)
+                            if result:  # If not {} returned, it's an error
+                                log.warning("Adding to phonebook failed:")
+                                print(result)
+                            rate = CallBlockerRate.BLOCK.value
+                        else:
+                            rate = CallBlockerRate.PASS.value
                     else:
                         rate = CallBlockerRate.PASS.value
                     raw_line = f'{dt};{rate};1;{full_number};{score_str}' + "\n"
@@ -202,3 +216,7 @@ if __name__ == "__main__":
 
     # Provoke CLIR (caller number suppressed)
     # test_line = '11.07.20 14:10:13;RING;0;;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+
+    # Provoke abroad call and call from Germany with faked numbers, show at least country or area then
+    # test_line = '11.07.20 14:10:13;RING;0;00226123456;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+    # test_line = '11.07.20 14:10:13;RING;0;07151123456;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)

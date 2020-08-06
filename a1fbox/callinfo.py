@@ -73,7 +73,7 @@ class CallInfo:
                                 continue
                             caller_name = name_count['name']
                             break  # Stop for first meaningful name
-            # Do not set just the location, this is the task of ONB/RNB etc.
+            # Do not set just the location, this is the task of ONB/RNB etc. "T-Mobile" is reported as location..
             if caller_name:
                 self.name = f'{caller_name}, {self.location}'
         except requests.exceptions.HTTPError as err:
@@ -142,17 +142,17 @@ if __name__ == "__main__":
     # Warning: the object ci is re-used here all the time, but not reverted, should be solved better in unit tests.
     number = "004922189920"  # BzGA
     ci = CallInfo(number)
-    assert (ci.method == CallInfoType.INIT.value)
+    assert ci.method == CallInfoType.INIT.value
     print(ci)
     ci.get_tellows_score()
-    assert (ci.method == CallInfoType.TELLOWS_SCORE.value)
+    assert ci.method == CallInfoType.TELLOWS_SCORE.value
     print(ci)
     ci.get_wemgehoert_score()
-    assert (ci.method == CallInfoType.WEMGEHOERT_SCORE.value)
+    assert ci.method == CallInfoType.WEMGEHOERT_SCORE.value
     print(ci)
     ci.get_revsearch_info()
-    assert (ci.method == CallInfoType.REV_SEARCH.value)
+    assert ci.method == CallInfoType.REV_SEARCH.value
     print(ci)
     ci.get_cascade_score()
-    assert (ci.method == CallInfoType.CASCADE.value)
+    assert ci.method == CallInfoType.CASCADE.value
     print(ci)

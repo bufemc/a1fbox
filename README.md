@@ -159,7 +159,7 @@ ToDo and/or further planning (pb = phonebook):
 - When caller uses CLIR there is no number, what should happen, e.g. extra state CLIR, should be blocked (is it possible?) or not
 - When caller uses country code from abroad, should be blocked or not (blocking action should go in extra method)
 - Unit tests
-- Config and initialization is a mess ATM, since moved to package
+- Config and initialization is a mess ATM, since moved to pseudo-package (setup still missing)
 - Config should be read only once/kept only once, currently read from several modules in package, solution maybe like fritzconnection/core in __init__.py?
 - CallBlockerLog sometimes doubled entries?
 - CallPrefix needs refactoring 
@@ -171,6 +171,7 @@ ToDo and/or further planning (pb = phonebook):
     - Numbers like 00114989998288xx need to parse also?:         
         - https://www.wemgehoert.de/nummer/00114989998288xxx
         - https://telefonnummer.net/rufnummer/114989998288xxx
+- CallInfo and CallPrefix can maybe merged into one?        
 - Injection of numbers to or instead of call monitor (mockup?) for: whitelist, blacklist, block, pass
 - Check possibility to merge/generalize CallBlockerInfo and CallBlockerLine - e.g. by inheritance classA(classB)
 - Method to retrieve last (400 max?) phone numbers and examine/rate them (BUT, by using a cache!) (except if in pbs?)
