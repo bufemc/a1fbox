@@ -120,7 +120,10 @@ class CallBlocker:
         if cm_line.type in [CallMonitorType.RING.value, CallMonitorType.CALL.value]:
             dt = cm_line.datetime  # Use same datetime for exact match
 
-            number = cm_line.caller
+            if cm_line.type == CallMonitorType.RING.value:
+                number = cm_line.caller  # Incoming call
+            else:
+                number = cm_line.callee  # Outgoing call
 
             if not number:  # Caller uses NO number (so called CLIR feature)
 
@@ -220,3 +223,6 @@ if __name__ == "__main__":
     # Provoke abroad call and call from Germany with faked numbers, show at least country or area then
     # test_line = '11.07.20 14:10:13;RING;0;00226123456;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
     # test_line = '11.07.20 14:10:13;RING;0;07151123456;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+
+    # Outgoing call
+    # test_line = '17.06.20 10:31:08;CALL;1;11;69xxx;952xxx;SIP0;'; cb.parse_and_examine_line(test_line)
