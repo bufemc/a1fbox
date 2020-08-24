@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from enum import Enum
+from time import time
 
 from fritzconn import FritzConn
 from phonebook import Phonebook
@@ -102,16 +103,23 @@ class CallBlocker:
         fritz_os = self.pb.fc.system_version
         self.cp = CallPrefix(fc=self.pb.fc)
         self.pb.ensure_pb_ids_valid(self.whitelist_pbids + self.blacklist_pbids + [self.blocklist_pbid])
-        self.whitelist = self.pb.get_all_numbers_for_pb_ids(self.whitelist_pbids)
-        self.blacklist = self.pb.get_all_numbers_for_pb_ids(self.blacklist_pbids)
+        self.reload_phonebooks()
         print(f'Call blocker initialized.. '
               f'model:{fritz_model} ({fritz_os}) '
               f'country:{self.cp.country_code_name} ({self.cp.country_code}) '
               f'area:{self.cp.area_code_name} ({self.cp.area_code}) '
               f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
 
+    def reload_phonebooks(self):
+        """ Whitelist should be reloaded e.g. every day, blacklist after each entry added. """
+        self.whitelist = self.pb.get_all_numbers_for_pb_ids(self.whitelist_pbids)
+        self.blacklist = self.pb.get_all_numbers_for_pb_ids(self.blacklist_pbids)
+        self.list_age = time()
+
     def parse_and_examine_line(self, raw_line):
         """ Parse call monitor line, if RING event not in lists, rate and maybe block the number. """
+        if time() - self.list_age >= 3600:  # Reload phonebooks if list is outdated
+            self.reload_phonebooks()
         log.debug(raw_line)
         cm_line = CallMonitorLine(raw_line)
         print(cm_line)
@@ -178,6 +186,10 @@ class CallBlocker:
                             if result:  # If not {} returned, it's an error
                                 log.warning("Adding to phonebook failed:")
                                 print(result)
+                            else:
+                                # Reload phonebook to prevent re-adding number for next ring event
+                                # self.blacklist = self.pb.get_all_numbers_for_pb_ids(self.blacklist_pbids)
+                                self.reload_phonebooks()
                             rate = CallBlockerRate.BLOCK.value
                         else:
                             rate = CallBlockerRate.PASS.value

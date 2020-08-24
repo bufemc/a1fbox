@@ -7,10 +7,12 @@ All is still in state _EXPERIMENTAL_ (work in progress, "API" is not final). Use
 
 ### Setup
 
-Use ```pip install -r requirements.txt``` to install dependencies. 
+Use ```pip install -r requirements.txt``` (depending on your OS replace the start of this line
+with ```pip3``` or  ```python3 -m pip```) to install dependencies. 
 Adjust ```config.py``` to your Fritz!Box settings (hint: you can also set ```"fritz.box"``` 
 instead of an IP). 
-For an example implementation run ```python example.py```.
+For an example implementation run ```python example.py``` (or, depending on your OS use ```python3 example.py``` to
+explicitely use the Python version 3, and not 2).
 
 ### Requirements
 - Python >= 3.6 - as e.g. f'Hello, {name}!' is used

@@ -79,6 +79,7 @@ class Phonebook(FritzPhonebook):
                 log.warning(f'{number} already in phonebook, skipped adding..')
                 return {}
 
+        # If {} == success, it was added, then reload phonebook, otherwise would try to re-add for next rings again
         return self.fc.call_action('X_AVM-DE_OnTel:1', 'SetPhonebookEntry', arguments=arg)
 
     def update_contact(self, pb_id, contact):
