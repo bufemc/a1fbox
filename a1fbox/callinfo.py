@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 UNKNOWN_NAME = 'UNKNOWN'
 UNKNOWN_LOCATION = 'UNKNOWN'
+UNRESOLVED_PREFIX_NAME = 'UNRESOLVED'  # Dependency: callprefix & ONB/RNB!
 
 
 class CallInfoType(Enum):
@@ -30,6 +31,7 @@ class CallInfo:
         self.number = number
         self.name = name if name else UNKNOWN_NAME
         self.location = location if location else UNKNOWN_LOCATION
+        self.prefix_name = UNRESOLVED_PREFIX_NAME
         self.method = CallInfoType.INIT.value
 
     def get_cascade_score(self):
@@ -45,9 +47,18 @@ class CallInfo:
             self.get_wemgehoert_score()
         self.method = CallInfoType.CASCADE.value
 
+    def get_location(self, unknown_only=True):
+        """ PLANNED. Retrieve location by using ONB list. Optionally only if not retrieved otherwise before. """
+        if unknown_only and self.location != UNKNOWN_LOCATION:
+            return
+        # Planning to implement, but for that we need to combine callprefix & callinfo somehow..
+        pass
+
     def get_tellows_score(self):
         """ Do scoring for a phone number via Tellows - extract score, comments, build a name:
-        https://blog.tellows.de/2011/07/tellows-api-fur-die-integration-in-eigene-programme/ """
+        https://blog.tellows.de/2011/07/tellows-api-fur-die-integration-in-eigene-programme/ -
+        use only if country is in list of https://www.tellows.de/api/getsupportedcountries ?
+        Unfortunately the company name is missing in JSON/XML output, but present in HTML? """
         self.method = CallInfoType.TELLOWS_SCORE.value
         url = f'http://www.tellows.de/basic/num/{self.number}?json=1&partner=test&apikey=test123'
         try:

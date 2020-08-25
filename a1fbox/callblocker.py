@@ -20,6 +20,8 @@ from utils import Log, anonymize_number
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
 
+FAKE_PREFIX = 'FAKE_PREFIX'  # E.g. prefix 09460 does not exist in Germany, regarding to ONB
+
 
 class CallBlockerRate(Enum):
     """ Custom blocker rates. Currently method is sufficient to distinguish rated entries. """
@@ -85,8 +87,11 @@ class CallBlockerLog(Log):
 class CallBlocker:
     """ Parse call monitor, examine RING event's phone number. """
 
-    def __init__(self, fc, whitelist_pbids, blacklist_pbids, blocklist_pbid, blockname_prefix='',
-                 min_score=6, min_comments=3, block_anon=False, block_abroad=False, logger=None):
+    def __init__(self, fc,
+                 whitelist_pbids, blacklist_pbids, blocklist_pbid, blockname_prefix='',
+                 min_score=6, min_comments=3,
+                 block_abroad=False, block_illegal_prefix=True,
+                 logger=None):
         """ Provide a whitelist phonebook (normally first index 0) and where blocked numbers should go into. """
         self.whitelist_pbids = whitelist_pbids
         self.blacklist_pbids = blacklist_pbids
@@ -94,8 +99,9 @@ class CallBlocker:
         self.blockname_prefix = blockname_prefix
         self.min_score = int(min_score)
         self.min_comments = int(min_comments)
-        self.block_anon = block_anon
-        self.block_abroad = block_abroad  # ToDo
+        # self.block_anon = block_anon  # How should that work? Impossible?
+        self.block_abroad = block_abroad
+        self.block_illegal_prefix = block_illegal_prefix
         self.logger = logger
         print("Retrieving data from Fritz!Box..")
         self.pb = Phonebook(fc=fc)
@@ -141,9 +147,7 @@ class CallBlocker:
 
             else:  # Caller WITH phone number
 
-                if number.startswith('00'):
-                    if not number.startswith(self.cp.country_code) and self.block_abroad:
-                        pass  # ToDo
+                is_abroad = number.startswith('00') and not number.startswith(self.cp.country_code)
 
                 if number.startswith('0'):
                     full_number = number
@@ -168,16 +172,22 @@ class CallBlocker:
                     ci = CallInfo(full_number)
                     ci.get_cascade_score()
 
-                    # If there is no other information try at least to detect country or area
+                    # Is the prefix (Vorwahl) valid, existing country code OR area code?
+                    prefix_name = self.cp.get_prefix_name(full_number)
+                    if not prefix_name:
+                        prefix_name = FAKE_PREFIX
+
+                    # If there is no other information name at least the country or area
                     if ci.name == UNKNOWN_NAME:
-                        name = self.cp.get_prefix_name(full_number)
-                        if name:
-                            ci.name = name
+                        ci.name = prefix_name
 
                     # Adapt to logging style of call monitor. Task of logger to parse the values to keys/names?
                     score_str = f'"{ci.name}";{ci.score};{ci.comments};{ci.searches};'
 
-                    if ci.score >= self.min_score and ci.comments >= self.min_comments:
+                    # Bad code style here - should be rewritten soon
+                    if (self.block_illegal_prefix and prefix_name == FAKE_PREFIX)\
+                            or (self.block_abroad and is_abroad)\
+                            or (ci.score >= self.min_score and ci.comments >= self.min_comments):
                         name = self.blockname_prefix + ci.name
                         # Precaution: should only happen if this is a call from outside, not from inside
                         if cm_line.type == CallMonitorType.RING.value:
@@ -217,8 +227,11 @@ if __name__ == "__main__":
     # Idea: could also define which rating method should be used?
 
     cb_log = CallBlockerLog(daily=True, anonymize=False)
-    cb = CallBlocker(fc=fritzconn, whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2,
-                     blockname_prefix='[Spam] ', min_score=6, min_comments=2, logger=cb_log.log_line)
+    cb = CallBlocker(fc=fritzconn,
+                     whitelist_pbids=[0], blacklist_pbids=[1, 2], blocklist_pbid=2, blockname_prefix='[Spam] ',
+                     min_score=6, min_comments=2,
+                     block_illegal_prefix=True, block_abroad=False,
+                     logger=cb_log.log_line)
 
     cm_log = CallMonitorLog(daily=True, anonymize=False)
     cm = CallMonitor(host=fritzconn.address, logger=cm_log.log_line, parser=cb.parse_and_examine_line)
@@ -226,15 +239,21 @@ if __name__ == "__main__":
     # Provoke whitelist test
     # test_line = '17.06.20 10:28:29;RING;0;07191952xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
     # Provoke blacklist test
-    # test_line = '17.06.20 10:28:29;RING;0;09912568741596;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+    # test_line = '17.06.20 10:28:29;RING;0;09912568741xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
     # cm.stop()
 
     # Provoke CLIR (caller number suppressed)
     # test_line = '11.07.20 14:10:13;RING;0;;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
 
     # Provoke abroad call and call from Germany with faked numbers, show at least country or area then
-    # test_line = '11.07.20 14:10:13;RING;0;00226123456;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
-    # test_line = '11.07.20 14:10:13;RING;0;07151123456;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+    # test_line = '11.07.20 14:10:13;RING;0;00226123xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+    # test_line = '11.07.20 14:10:13;RING;0;07151123xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
 
     # Outgoing call
     # test_line = '17.06.20 10:31:08;CALL;1;11;69xxx;952xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+
+    # Fake prefix call
+    # test_line = '11.07.20 14:10:13;RING;0;094609xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+
+    # Abroad cold call
+    # test_line = '11.07.20 14:10:13;RING;0;003449xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)

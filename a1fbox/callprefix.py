@@ -60,8 +60,10 @@ class CallPrefix:
         self.country_code_name = self.get_prefix_name(self.country_code)
 
     def init_prefix_dict(self):
-        """ Read the area codes into a dict. ONB provided by BNetzA as CSV, separated by ';', RNB created manually. """
+        """ Read the area codes into a dict. ONB provided by BNetzA as CSV, separated by ';', RNB created manually.
+        And country codes. Detect type by kind. """
         self.prefix_dict = dict()
+        self.german_prefix_set = set()  # Could be used to detect fake ONBs like 09460
 
         # Landline prefixes for Germany, including CSV header, see https://tinyurl.com/y7648pc9
         with open(ONB_FILE, encoding='utf-8') as csv_file:
@@ -78,6 +80,7 @@ class CallPrefix:
                     name = row[1]
                     kind = CallPrefixType.DE_LANDLINE if row[2] == '1' else CallPrefixType.DE_LANDLINE_INACTIVE
                     self.prefix_dict[area_code] = {'code': area_code, 'name': name, 'kind': kind}
+                    self.german_prefix_set.add(area_code)
 
         # Mobile prefixes for Germany, no CSV header
         with open(RNB_FILE, encoding='utf-8') as csv_file:
@@ -88,6 +91,7 @@ class CallPrefix:
                     name = row[1]
                     kind = CallPrefixType.DE_MOBILE
                     self.prefix_dict[area_code] = {'code': area_code, 'name': name, 'kind': kind}
+                    self.german_prefix_set.add(area_code)
 
         # Country code prefixes: combine iso2_code, prefix_code and country_name
         with open(COUNTRY_CODES_FILE, encoding='utf-8') as json_file:
@@ -133,14 +137,12 @@ class CallPrefix:
         return None
 
     def get_prefix_name(self, number):
-        """ Return name for a prefix, if found and in Germany. """
+        """ Return name for a prefix, if found, else None. """
         prefix_dict = self.get_prefix_dict(number)
         if prefix_dict:
             return prefix_dict['name']
-        elif number.startswith('00'):
-            return 'ABROAD'
         else:
-            return 'UNKNOWN'
+            return None
 
     # Further ideas: do auto download und double unzip of onb csv?
 

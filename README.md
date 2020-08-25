@@ -21,6 +21,7 @@ explicitely use the Python version 3, and not 2).
     - enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
     - either standard or dedicated user with password (set in ```config.py```) and enough permissions
     - an additional phonebook for cold calls, configured to block incoming numbers
+- It is assumed you are and run this in Germany, if not, please contact me so we can adapt it to your environment
 
 ### Description
 Idea was to create a call blocker for cold calls. I tried to build modules that were as independent as possible,
