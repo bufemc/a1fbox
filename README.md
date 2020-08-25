@@ -80,6 +80,8 @@ just replace the first space or tab with a semicolon.
 
 Country data is taken from http://country.io/data/ - http://country.io/phone.json and http://country.io/names.json -
 downloaded 28th June 2020, but not sure how accurate the data is.
+Optionally one could parse this from ITU: https://www.itu.int/oth/T0202.aspx?parent=T0202
+- especially the GN section with some more (mobile?) networks.
 
 ONB file provided here, was originally named: NVONB.INTERNET.20200610.ONB 
     
@@ -156,6 +158,7 @@ More links - if you want to dive deeper:
 #### Planning and issues
 
 ToDo and/or further planning (pb = phonebook):
+- Add GN section of https://www.itu.int/oth/T0202.aspx?parent=T0202 to data and parse it in callprefix?
 - Numbers in phonebooks cannot only have local area prefix (or country?) code, but also spaces like "<prefix> <number>",
     when retrieving remove spaces (and maybe if same country code)
 - Architecture pains: should fritzconn be passed if required, and abstraction layers be used?

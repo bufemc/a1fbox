@@ -110,6 +110,8 @@ class CallBlocker:
         self.cp = CallPrefix(fc=self.pb.fc)
         self.pb.ensure_pb_ids_valid(self.whitelist_pbids + self.blacklist_pbids + [self.blocklist_pbid])
         self.reload_phonebooks()
+        if self.cp.country_code != '0049':
+            log.warning('This script was developed for usage in Germany - please contact the author!')
         print(f'Call blocker initialized.. '
               f'model:{fritz_model} ({fritz_os}) '
               f'country:{self.cp.country_code_name} ({self.cp.country_code}) '
@@ -174,7 +176,7 @@ class CallBlocker:
 
                     # Is the prefix (Vorwahl) valid, existing country code OR area code?
                     prefix_name = self.cp.get_prefix_name(full_number)
-                    if not prefix_name:
+                    if not prefix_name and not number.startswith('00'):  # Do not block e.g. Inmarsat or similar
                         prefix_name = FAKE_PREFIX
 
                     # If there is no other information name at least the country or area

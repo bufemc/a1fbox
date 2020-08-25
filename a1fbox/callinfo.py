@@ -114,6 +114,13 @@ class CallInfo:
         except requests.exceptions.HTTPError as err:
             log.warning(err)
 
+    def get_numreport_name(self):
+        """ PLANNED: POST SearchForm[phone]=07191xxx to https://de.numreport.com/site/search ..
+        follow redirect, then grab e.g. from data-name="Kaufland Backnang".
+        Requires _csrf from e.g. https://de.numreport.com/ and there <input type="hidden" name="_csrf" value="..",
+        and many other checks are done (origin/referer?), returns otherwise http 400. """
+        pass
+
     def get_revsearch_info(self):
         """ Do reverse search via DasOertliche, currently ugly parsing, which might fail if name has commas? """
         self.method = CallInfoType.REV_SEARCH.value

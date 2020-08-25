@@ -122,7 +122,7 @@ class CallPrefix:
             self.prefix_dict[code] = {'code': code, 'name': name, 'kind': kind}
 
     def get_prefix_dict(self, number):
-        """ Return a dict for a prefix, with code, name, active, mobile. """
+        """ Return a dict for a prefix, with code, name, kind (DE_landline, DE_mobile, abroad). """
         if self.country_code != '0049':
             log.warning('This method could return wrong prefix names if used outside Germany!')
         # "0049" is Germany, but "00497191" should get converted to "07191"
