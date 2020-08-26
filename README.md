@@ -80,6 +80,10 @@ just replace the first space or tab with a semicolon.
 
 Country data is taken from http://country.io/data/ - http://country.io/phone.json and http://country.io/names.json -
 downloaded 28th June 2020, but not sure how accurate the data is.
+
+Further numbers used in Germany:
+https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/Rufnummern_node.html
+
 Optionally one could parse this from ITU: https://www.itu.int/oth/T0202.aspx?parent=T0202
 - especially the GN section with some more (mobile?) networks.
 

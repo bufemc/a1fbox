@@ -152,9 +152,9 @@ class CallBlocker:
                 is_abroad = number.startswith('00') and not number.startswith(self.cp.country_code)
 
                 if number.startswith('0'):
-                    full_number = number
+                    full_number = number  # Number with either country code or area code
                 else:
-                    full_number = self.cp.area_code + number
+                    full_number = self.cp.area_code + number  # Number in same area network
 
                 # 1. Is either full number 071..123... or short number 123... in the white- or blacklist?
                 name_white = self.pb.get_name_for_number_in_dict(number, self.whitelist, area_code=self.cp.area_code)
@@ -259,3 +259,6 @@ if __name__ == "__main__":
 
     # Abroad cold call
     # test_line = '11.07.20 14:10:13;RING;0;003449xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)
+
+    # Wrong block, allow special prefix numbers like 0800, 0180 etc. (add in CallPrefix)
+    # test_line = '11.07.20 14:10:13;RING;0;08004400xxx;69xxx;SIP0;'; cb.parse_and_examine_line(test_line)

@@ -25,6 +25,11 @@ class CallPrefixType(Enum):
     DE_LANDLINE = 1
     DE_LANDLINE_INACTIVE = 2
     DE_MOBILE = 10
+    DE_SPECIAL = 20
+    INT_SPECIAL = 21
+    DE_FREEPHONE = 30
+    INT_FREEPHONE = 31
+    DE_PAYPHONE = 40
     COUNTRY = 99
 
 
@@ -59,11 +64,39 @@ class CallPrefix:
         self.country_code_dict = self.get_prefix_dict(self.country_code)
         self.country_code_name = self.get_prefix_name(self.country_code)
 
+    def add_prefix(self, area_code, name, kind):
+        self.prefix_dict[area_code] = {'code': area_code, 'name': name, 'kind': kind}
+
     def init_prefix_dict(self):
         """ Read the area codes into a dict. ONB provided by BNetzA as CSV, separated by ';', RNB created manually.
         And country codes. Detect type by kind. """
         self.prefix_dict = dict()
-        self.german_prefix_set = set()  # Could be used to detect fake ONBs like 09460
+
+        # Special prefixes in Germany and later international - taken German wording from:
+        # https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/Rufnummern_node.html
+        self.add_prefix('0800', 'FreePhone-0800-Germany', CallPrefixType.DE_FREEPHONE)
+        self.add_prefix('010', 'Betreiberkennzahlen für Betreiberauswahl oder -vorauswahl', CallPrefixType.DE_SPECIAL)
+        self.add_prefix('018', 'Nationale virtuelle Private Netze (VPN)', CallPrefixType.DE_SPECIAL)
+        self.add_prefix('0700', 'Persönliche Rufnummern', CallPrefixType.DE_SPECIAL)  # DE_PAYPHONE if forwarded
+        self.add_prefix('031', 'Testrufnummern', CallPrefixType.DE_SPECIAL)
+        self.add_prefix('032', 'Nationale Teilnehmerrufnummern', CallPrefixType.DE_SPECIAL)
+
+        # Extra payment: https://www.verivox.de/internet/themen/sonderrufnummern/
+        self.add_prefix('019', 'Online-Dienste und Verkehrslenkung', CallPrefixType.DE_PAYPHONE)
+        self.add_prefix('0900', 'Premium-Dienste', CallPrefixType.DE_PAYPHONE)
+        self.add_prefix('09009', 'Anwählprogramme (Dialer)', CallPrefixType.DE_PAYPHONE)
+        self.add_prefix('0137', 'Kurzzeitiger Massenverkehr', CallPrefixType.DE_PAYPHONE)
+        self.add_prefix('0180', 'Service-Dienste', CallPrefixType.DE_PAYPHONE)
+
+        # As longer numbers like 0175 are found first, this is just a fallback
+        self.add_prefix('015', 'Mobile Dienste', CallPrefixType.DE_MOBILE)
+        self.add_prefix('016', 'Mobile Dienste', CallPrefixType.DE_MOBILE)
+        self.add_prefix('017', 'Mobile Dienste', CallPrefixType.DE_MOBILE)
+
+        # International special numbers
+        self.add_prefix('00800', 'FreePhone-00800-International', CallPrefixType.INT_FREEPHONE)
+        self.add_prefix('001800', 'FreePhone-001800-International', CallPrefixType.INT_FREEPHONE)
+        self.add_prefix('0181', 'Internationale virtuelle private Netze (VPN)', CallPrefixType.INT_SPECIAL)
 
         # Landline prefixes for Germany, including CSV header, see https://tinyurl.com/y7648pc9
         with open(ONB_FILE, encoding='utf-8') as csv_file:
@@ -79,8 +112,7 @@ class CallPrefix:
                     area_code = '0' + row[0]
                     name = row[1]
                     kind = CallPrefixType.DE_LANDLINE if row[2] == '1' else CallPrefixType.DE_LANDLINE_INACTIVE
-                    self.prefix_dict[area_code] = {'code': area_code, 'name': name, 'kind': kind}
-                    self.german_prefix_set.add(area_code)
+                    self.add_prefix(area_code, name, kind)
 
         # Mobile prefixes for Germany, no CSV header
         with open(RNB_FILE, encoding='utf-8') as csv_file:
@@ -90,8 +122,7 @@ class CallPrefix:
                     area_code = row[0].replace('-', '').replace('(0)', '0')
                     name = row[1]
                     kind = CallPrefixType.DE_MOBILE
-                    self.prefix_dict[area_code] = {'code': area_code, 'name': name, 'kind': kind}
-                    self.german_prefix_set.add(area_code)
+                    self.add_prefix(area_code, name, kind)
 
         # Country code prefixes: combine iso2_code, prefix_code and country_name
         with open(COUNTRY_CODES_FILE, encoding='utf-8') as json_file:
@@ -119,7 +150,7 @@ class CallPrefix:
         kind = CallPrefixType.COUNTRY
         for cc, name in cc_name_dict.items():
             code = '00' + cc
-            self.prefix_dict[code] = {'code': code, 'name': name, 'kind': kind}
+            self.add_prefix(code, name, kind)
 
     def get_prefix_dict(self, number):
         """ Return a dict for a prefix, with code, name, kind (DE_landline, DE_mobile, abroad). """
@@ -192,3 +223,9 @@ if __name__ == "__main__":
     res = cp.get_prefix_dict(number)
     assert res['name'] == 'Backnang'
     assert res['kind'] == CallPrefixType.DE_LANDLINE
+
+    # Special numbers
+    number = "0800"
+    res = cp.get_prefix_dict(number)
+    assert res['name'] == 'FreePhone-0800-Germany'
+    assert res['kind'] == CallPrefixType.DE_FREEPHONE
