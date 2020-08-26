@@ -196,6 +196,7 @@ ToDo and/or further planning (pb = phonebook):
     - CallBlocker
         - still very basic, missing: handling for failing requests, area_code determination, logging
     - Missing unit tests and a better package structure
+- "Lass mich dir einen kostenlosen Ratschlag geben. Bring die Nummer erst ins internationale Format. Dann guck als erstes nach der Ländervorwahl und dann die nationale nummer abarbeiten. Um Regex wirst du wohl nicht drum rum kommen."
 
 
 [Airport1]: https://www.airport1.de/

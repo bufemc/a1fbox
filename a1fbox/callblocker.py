@@ -6,13 +6,11 @@ import sys
 from enum import Enum
 from time import time
 
+from callinfo import CallInfo, CallInfoType, UNKNOWN_NAME
+from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
+from callprefix import CallPrefix
 from fritzconn import FritzConn
 from phonebook import Phonebook
-
-from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
-
-from callinfo import CallInfo, CallInfoType, UNKNOWN_NAME
-from callprefix import CallPrefix
 
 sys.path.append(os.path.dirname(__file__))
 from utils import Log, anonymize_number
@@ -116,7 +114,7 @@ class CallBlocker:
               f'model:{fritz_model} ({fritz_os}) '
               f'country:{self.cp.country_code_name} ({self.cp.country_code}) '
               f'area:{self.cp.area_code_name} ({self.cp.area_code}) '
-              f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)}')
+              f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)} prefixes:{len(self.cp.prefix_dict)}')
 
     def reload_phonebooks(self):
         """ Whitelist should be reloaded e.g. every day, blacklist after each entry added. """
@@ -174,6 +172,7 @@ class CallBlocker:
                     ci = CallInfo(full_number)
                     ci.get_cascade_score()
 
+                    # ToDo: check also if e.g. the prefix is inactive, e.g. DE_LANDLINE_INACTIVE
                     # Is the prefix (Vorwahl) valid, existing country code OR area code?
                     prefix_name = self.cp.get_prefix_name(full_number)
                     if not prefix_name and not number.startswith('00'):  # Do not block e.g. Inmarsat or similar
@@ -187,8 +186,8 @@ class CallBlocker:
                     score_str = f'"{ci.name}";{ci.score};{ci.comments};{ci.searches};'
 
                     # Bad code style here - should be rewritten soon
-                    if (self.block_illegal_prefix and prefix_name == FAKE_PREFIX)\
-                            or (self.block_abroad and is_abroad)\
+                    if (self.block_illegal_prefix and prefix_name == FAKE_PREFIX) \
+                            or (self.block_abroad and is_abroad) \
                             or (ci.score >= self.min_score and ci.comments >= self.min_comments):
                         name = self.blockname_prefix + ci.name
                         # Precaution: should only happen if this is a call from outside, not from inside

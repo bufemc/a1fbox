@@ -30,6 +30,7 @@ class CallPrefixType(Enum):
     DE_FREEPHONE = 30
     INT_FREEPHONE = 31
     DE_PAYPHONE = 40
+    DE_RESERVE = 50
     COUNTRY = 99
 
 
@@ -69,7 +70,7 @@ class CallPrefix:
 
     def init_prefix_dict(self):
         """ Read the area codes into a dict. ONB provided by BNetzA as CSV, separated by ';', RNB created manually.
-        And country codes. Detect type by kind. """
+        And country codes. Detect type by kind. Initialize with German prefix codes not available as JSON/CSV. """
         self.prefix_dict = dict()
 
         # Special prefixes in Germany and later international - taken German wording from:
@@ -89,14 +90,33 @@ class CallPrefix:
         self.add_prefix('0180', 'Service-Dienste', CallPrefixType.DE_PAYPHONE)
 
         # As longer numbers like 0175 are found first, this is just a fallback
-        self.add_prefix('015', 'Mobile Dienste', CallPrefixType.DE_MOBILE)
-        self.add_prefix('016', 'Mobile Dienste', CallPrefixType.DE_MOBILE)
-        self.add_prefix('017', 'Mobile Dienste', CallPrefixType.DE_MOBILE)
+        for area_code in ['015', '016', '017']:
+            self.add_prefix(area_code, 'Mobile Dienste', CallPrefixType.DE_MOBILE)
 
         # International special numbers
         self.add_prefix('00800', 'FreePhone-00800-International', CallPrefixType.INT_FREEPHONE)
         self.add_prefix('001800', 'FreePhone-001800-International', CallPrefixType.INT_FREEPHONE)
         self.add_prefix('0181', 'Internationale virtuelle private Netze (VPN)', CallPrefixType.INT_SPECIAL)
+
+        # More German prefixes found here:
+        # https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/NP_Nummernraum.pdf?__blob=publicationFile&v=3
+        self.add_prefix('0115', 'Behoerdenruf, internationaler Zugang', CallPrefixType.DE_SPECIAL)
+        self.add_prefix('0116', 'Harmonisierte Dienste von sozialem Wert, internationaler Zugang',
+                        CallPrefixType.DE_SPECIAL)
+        self.add_prefix('0118', 'Vermittlungsdienste, internationaler Zugang', CallPrefixType.DE_SPECIAL)
+
+        for area_code in ['011', '012', '013', '014', '019',
+                          '0161', '0165', '0166', '0167',
+                          '0312', '0313', '0314', '0315', '0316', '0317', '0318', '0319',
+                          '0500', '0501', '0701', '0801', '0901', '0902',
+                          '09000', '09002', '09004', '09006', '09007', '09008']:
+            self.add_prefix(area_code, 'Reserve', CallPrefixType.DE_RESERVE)
+
+        for area_code in ['0164', '0168', '0169']:
+            self.add_prefix(area_code, 'e*Message Wireless Information Services Deutschland GmbH (Funkruf)',
+                            CallPrefixType.DE_SPECIAL)
+
+        self.add_prefix('0199', 'Verkehrslenkungsnummern für netzinterne Verkehrslenkung', CallPrefixType.DE_SPECIAL)
 
         # Landline prefixes for Germany, including CSV header, see https://tinyurl.com/y7648pc9
         with open(ONB_FILE, encoding='utf-8') as csv_file:
@@ -104,11 +124,11 @@ class CallPrefix:
             for i, row in enumerate(csvreader):
                 if i == 0:
                     # This is for prevention only, if the order is changed it will fail here intentionally
-                    assert (row[0] == 'Ortsnetzkennzahl')
-                    assert (row[1] == 'Ortsnetzname')
-                    assert (row[2] == 'KennzeichenAktiv')
+                    assert row[0] == 'Ortsnetzkennzahl'
+                    assert row[1] == 'Ortsnetzname'
+                    assert row[2] == 'KennzeichenAktiv'
                     continue
-                if len(row) == 3:  # Last line is ['\x1a']
+                if len(row) == 3:  # Prevent processing last line, which is ['\x1a']
                     area_code = '0' + row[0]
                     name = row[1]
                     kind = CallPrefixType.DE_LANDLINE if row[2] == '1' else CallPrefixType.DE_LANDLINE_INACTIVE
@@ -229,3 +249,8 @@ if __name__ == "__main__":
     res = cp.get_prefix_dict(number)
     assert res['name'] == 'FreePhone-0800-Germany'
     assert res['kind'] == CallPrefixType.DE_FREEPHONE
+
+    number = "09008"
+    res = cp.get_prefix_dict(number)
+    assert res['name'] == 'Reserve'
+    assert res['kind'] == CallPrefixType.DE_RESERVE
