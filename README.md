@@ -84,10 +84,9 @@ downloaded 28th June 2020, but not sure how accurate the data is.
 Further numbers used in Germany:
 https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/Rufnummern_node.html
 
-Optionally one could parse this from ITU: https://www.itu.int/oth/T0202.aspx?parent=T0202
-- especially the GN section with some more (mobile?) networks.
-
 ONB file provided here, was originally named: NVONB.INTERNET.20200610.ONB 
+
+Further sources are noted in internal code!
     
 #### Guessed parameters for call monitor types (there is no official document?)
 If anyone knows an official document please tell me!

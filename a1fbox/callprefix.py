@@ -118,6 +118,24 @@ class CallPrefix:
 
         self.add_prefix('0199', 'Verkehrslenkungsnummern für netzinterne Verkehrslenkung', CallPrefixType.DE_SPECIAL)
 
+        # Section "GN" of https://www.itu.int/oth/T0202.aspx?parent=T0202
+        self.add_prefix('0088237', 'AT&T Cingular Wireless Network', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('008835110', 'Bandwidth.com', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('0088234', 'BebbiCell AG', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('008818', 'Globalstar Inc.', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('008819', 'Globalstar Inc.', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('00870', 'Inmarsat', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('008816', 'Iridium', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('008817', 'Iridium', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('0088232', 'Maritime Communications Partner (MCP)', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('0088233', 'Oration Technologies', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('008835130', 'Sipme', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('0088213', 'Telespazio S.p.A.', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('0088216', 'Thuraya', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('00888', 'United Nations - OCHA - Reserved', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('0087810', 'VISIONng', CallPrefixType.INT_SPECIAL)
+        self.add_prefix('008835100', 'Voxbone SA', CallPrefixType.INT_SPECIAL)
+
         # Landline prefixes for Germany, including CSV header, see https://tinyurl.com/y7648pc9
         with open(ONB_FILE, encoding='utf-8') as csv_file:
             csvreader = csv.reader(csv_file, delimiter=';')
@@ -254,3 +272,19 @@ if __name__ == "__main__":
     res = cp.get_prefix_dict(number)
     assert res['name'] == 'Reserve'
     assert res['kind'] == CallPrefixType.DE_RESERVE
+
+    # Interesting clash: country "PN" shall have "870" too, after research "64" would be "NZ", and "649" is "PN"
+    number = "00870"
+    res = cp.get_prefix_dict(number)
+    assert res['name'] == 'Inmarsat'
+    assert res['kind'] == CallPrefixType.INT_SPECIAL
+
+    number = "0064"
+    res = cp.get_prefix_dict(number)
+    assert res['name'] == 'New Zealand'
+    assert res['kind'] == CallPrefixType.COUNTRY
+
+    number = "00649"
+    res = cp.get_prefix_dict(number)
+    assert res['name'] == 'Pitcairn'
+    assert res['kind'] == CallPrefixType.COUNTRY

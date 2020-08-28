@@ -1,5 +1,11 @@
 # Example log for the call monitor, empty lines and comments are allowed
 
+# Guessed structure is:
+# date time;RING;connection_id;caller_number;callee_number;SIP1;\n
+# date time;CONNECT;connection_id;extension_id;caller_number;\n
+# date time;DISCONNECT;connection_id;duration_seconds;\n
+# date time;CALL;connection_id;extension_id;caller_number;callee_number;SIP1;\n
+
 16.06.20 12:25:42;RING;0;01755290xxx;732xxx;SIP1;  # Mobile calls land line
 16.06.20 12:25:46;DISCONNECT;0;0;  # After rejected or after CONNECT, last number duration?
 16.06.20 15:04:02;CALL;1;13;732xxx;01755290xxx;SIP1;  # Land line calls mobile
