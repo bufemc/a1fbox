@@ -5,6 +5,7 @@ import os
 import sys
 from enum import Enum
 from time import time
+from urllib.parse import quote
 
 from callinfo import CallInfo, CallInfoType, UNKNOWN_NAME
 from callmonitor import CallMonitor, CallMonitorType, CallMonitorLine, CallMonitorLog
@@ -14,6 +15,12 @@ from phonebook import Phonebook
 
 sys.path.append(os.path.dirname(__file__))
 from utils import Log, anonymize_number
+
+sys.path.append("..")
+from config import TELEGRAM_BOT_URL
+
+import requests
+
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
@@ -213,6 +220,9 @@ class CallBlocker:
             print(parsed_line)
             if self.logger:
                 self.logger(raw_line)
+
+            if TELEGRAM_BOT_URL:
+                requests.get(TELEGRAM_BOT_URL + quote("CallBlocker: " + raw_line))
 
 
 if __name__ == "__main__":
