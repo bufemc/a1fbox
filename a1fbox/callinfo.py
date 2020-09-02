@@ -75,6 +75,9 @@ class CallInfo:
             if 'numberDetails' in obj and 'name' in obj['numberDetails']:
                 caller_name = obj['numberDetails']['name']
 
+            if 'callerNames' in obj and 'caller' in obj['callerNames']:
+                caller_name = obj['callerNames']['caller'][0]
+
             # Build smarter name, iff name can be retrieved: "name, location"
             if not caller_name:
                 if 'callerTypes' in obj:
