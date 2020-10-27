@@ -12,6 +12,8 @@ UNKNOWN_NAME = 'UNKNOWN'
 UNKNOWN_LOCATION = 'UNKNOWN'
 UNRESOLVED_PREFIX_NAME = 'UNRESOLVED'  # Dependency: callprefix & ONB/RNB!
 
+session = requests.session()  # Re-use for wemgehoert.de
+
 
 class CallInfoType(Enum):
     """ Which method has been used to enrich the data, if none it's 0. """
@@ -98,10 +100,15 @@ class CallInfo:
         self.method = CallInfoType.WEMGEHOERT_SCORE.value
         url = f'https://www.wemgehoert.de/nummer/{self.number}'
 
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
 
         try:
-            req = requests.get(url, headers=headers)
+            req = session.get(url, headers=headers)
             req.raise_for_status()
             content = req.text
             # Extract 84 from e.g. <div id="progress-bar-inner" class="progress-bar-rank5">84</div>

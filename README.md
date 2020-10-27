@@ -56,7 +56,24 @@ phone numbers or reverse search. Or add contacts to your phonebook. Feedback is 
     - Retrieve all contacts from a phonebook, but remove internal numbers, see [fc-issue-53], [fc-issue-55]
     - Find a name for a number in phonebook, even if with/without area or country code 
     - Add contact to phonebook, see [fc-issue-50], but Umlauts are still a pain    
-    
+
+### Autostart on a Raspberry Pi
+
+The following is an example which works here on a Raspberry Pi 4 with Raspberry OS 32.
+First retrieve the (your!) correct working directory, also check if your Python3 is 
+addressed by ```python3```. Then enter ```crontab -e``` and add this (adapt it to your needs):
+
+```
+@reboot (sleep 30 && cd /home/pi/work/a1fbox && /usr/bin/env /usr/bin/python3 /home/pi/work/a1fbox/example2.py >> /home/pi/work/fb.log) &
+```
+
+Then do a reboot. Check e.g. with ```ps -elf | grep python``` whether it works.
+
+Explanation: the sleeping time seems to be mandatory, otherwise the script might fail to start
+(e.g. no network available at first). But the full pipe is sent to background, so it should not delay
+the booting process. The changing into the working directory is (currently) required, so it will
+create the log on the correct position. Optionally you could log the output as seen into fb.log.
+
 ### License
 MIT
 

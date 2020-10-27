@@ -122,6 +122,8 @@ class CallBlocker:
               f'country:{self.cp.country_code_name} ({self.cp.country_code}) '
               f'area:{self.cp.area_code_name} ({self.cp.area_code}) '
               f'whitelisted:{len(self.whitelist)} blacklisted:{len(self.blacklist)} prefixes:{len(self.cp.prefix_dict)}')
+        if TELEGRAM_BOT_URL:
+            requests.get(TELEGRAM_BOT_URL + quote("CallBlocker: initialized"))
 
     def reload_phonebooks(self):
         """ Whitelist should be reloaded e.g. every day, blacklist after each entry added. """
@@ -221,6 +223,7 @@ class CallBlocker:
             if self.logger:
                 self.logger(raw_line)
 
+            # ToDo: add that an event is only posted once if same full_number and e.g. not same minute
             if TELEGRAM_BOT_URL:
                 requests.get(TELEGRAM_BOT_URL + quote("CallBlocker: " + raw_line))
 
