@@ -17,7 +17,10 @@ sys.path.append(os.path.dirname(__file__))
 from utils import Log, anonymize_number
 
 sys.path.append("..")
-from config import TELEGRAM_BOT_URL
+try:
+    from config import TELEGRAM_BOT_URL
+except ImportError:
+    TELEGRAM_BOT_URL = ""
 
 import requests
 
