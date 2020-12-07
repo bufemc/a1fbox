@@ -45,8 +45,9 @@ class CallInfo:
         if len(rev_name) > len(self.name):
             self.name = rev_name
         # If Tellows has no information or the name is UNKNOWN, try also WemGehoert.de
-        if self.score == 5 and self.name == UNKNOWN_NAME:
-            self.get_wemgehoert_score()
+        # Deactivated ATM, as too many captchas required
+        # if self.score == 5 and self.name == UNKNOWN_NAME:
+        #     self.get_wemgehoert_score()
         self.method = CallInfoType.CASCADE.value
 
     def get_location(self, unknown_only=True):

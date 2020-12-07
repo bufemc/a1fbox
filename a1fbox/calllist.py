@@ -37,7 +37,7 @@ if __name__ == "__main__":
                 number = cp.area_code + number
             numbers.add(number)
 
-    print(f'\nAll {len(calls)} calls, uniqued {len(numbers)}:')
+    print(f'\nLast {len(calls)} calls, uniqued: {len(numbers)}')
     print(numbers)
 
     anylist = pb.get_all_numbers_for_pb_ids([0, 1, 2])  # White- or blacklist
@@ -52,9 +52,11 @@ if __name__ == "__main__":
             unknowns.add(number)
 
     # Idea: rate & info ... auto-block .. or add good names to whitelist?
-    print('\nResolving Unknowns:')
+    print(f'\nResolving Unknowns: {len(unknowns)}')
     for unknown in unknowns:
         ci = CallInfo(unknown)
         ci.get_cascade_score()
         print(ci)
-        sleep(10)  # Anti-DDOS needed for tellows and wemgehoert, otherwise you get blocked or captcha
+        sleep(5)  # Anti-DDOS needed for tellows (and if used, wemgehoert), otherwise you get blocked or captcha
+
+    print('\nREADY.')
