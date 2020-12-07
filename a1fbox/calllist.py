@@ -56,6 +56,8 @@ if __name__ == "__main__":
     for unknown in unknowns:
         ci = CallInfo(unknown)
         ci.get_cascade_score()
+        if not ci.location:
+            ci.location = cp.get_prefix_name(unknown)
         print(ci)
         sleep(5)  # Anti-DDOS needed for tellows (and if used, wemgehoert), otherwise you get blocked or captcha
 
