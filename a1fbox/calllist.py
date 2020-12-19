@@ -19,6 +19,14 @@ if __name__ == "__main__":
     cp = CallPrefix(fc=fritzconn)
     pb = Phonebook(fc=fritzconn)
 
+    print('Internal active handset devices:')
+    res = pb.get_handset_info(keep_phone_only=False)
+    print(res)
+
+    print('Internal active handset phone numbers:')
+    res = pb.get_handset_info(keep_phone_only=True)
+    print(res)
+
     calls = fc.get_missed_calls(update=True)
     missed_list = []
     for call in calls:
@@ -40,7 +48,8 @@ if __name__ == "__main__":
     print(f'\nLast {len(calls)} calls, uniqued: {len(numbers)}')
     print(numbers)
 
-    anylist = pb.get_all_numbers_for_pb_ids([0, 1, 2])  # White- or blacklist
+    anylist = pb.get_all_numbers_for_pb_ids([0, 1, 2], keep_internals=False)  # White- or blacklist
+    print(anylist)
 
     print('\nWhite- or blacklisted:')
     unknowns = set()

@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-import html
 import logging
 
-from fritzconn import FritzConn
 from fritzconnection.lib.fritzphonebook import FritzPhonebook
+
+from fritzconn import FritzConn
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
@@ -82,6 +82,19 @@ class Phonebook(FritzPhonebook):
         # If {} == success, it was added, then reload phonebook, otherwise would try to re-add for next rings again
         return self.fc.call_action('X_AVM-DE_OnTel:1', 'SetPhonebookEntry', arguments=arg)
 
+    def get_handset_info(self, keep_phone_only=False):
+        """ Idea: retrieve internal handset assignments and their numbers."""
+        res = self.fc.call_action('X_AVM-DE_OnTel:1', 'GetDECTHandsetList')
+        ids = res['NewDectIDList'].split(',')
+        dect_set = set()
+        for id in ids:
+            res = self.fc.call_action('X_AVM-DE_OnTel:1', 'GetDECTHandsetInfo', arguments={'NewDectId': id})
+            entry = res['NewHandsetName']
+            if keep_phone_only:
+                entry = entry.split(' ')[1]
+            dect_set.add(entry)
+        return dect_set
+
     def update_contact(self, pb_id, contact):
         """ Idea: could use contact.uniqueid to update corresponding record in Fritz!Box phonebook with pb_id. """
         raise NotImplementedError()
@@ -104,12 +117,13 @@ class Phonebook(FritzPhonebook):
             if pb_id not in self.phonebook_ids:
                 raise Exception(f'The phonebook_id {pb_id} does not exist!')
 
-    def get_all_numbers_for_pb_ids(self, pb_ids):
+    def get_all_numbers_for_pb_ids(self, pb_ids, keep_internals=False):
         """ Retrieve and concatenate number-name-dicts for several phonebook ids. """
         assert (type(pb_ids) == list)
         number_name_dict = dict()
         for pb_id in pb_ids:
-            number_name_dict.update(self.get_all_numbers(pb_id))  # [{Number: Name}, ..]
+            number_name_dict.update(
+                self.get_all_numbers(id=pb_id, keep_internals=keep_internals))  # [{Number: Name}, ..]
         return number_name_dict
 
     def get_name_for_number_in_dict(self, number, number_name_dict, area_code=None, country_code=None):
