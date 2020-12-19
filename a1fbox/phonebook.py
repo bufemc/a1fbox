@@ -95,6 +95,12 @@ class Phonebook(FritzPhonebook):
             dect_set.add(entry)
         return dect_set
 
+    def get_voip_clients(self):
+        return self.fc.call_action('X_VoIP:1', 'X_AVM-DE_GetNumberOfClients')
+
+    def get_voip_numbers(self):
+        return self.fc.call_action('X_VoIP:1', 'X_AVM-DE_GetNumbers')['NewNumberList']
+
     def update_contact(self, pb_id, contact):
         """ Idea: could use contact.uniqueid to update corresponding record in Fritz!Box phonebook with pb_id. """
         raise NotImplementedError()

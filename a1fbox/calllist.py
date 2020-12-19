@@ -4,6 +4,7 @@ from collections import Counter
 from time import sleep
 
 from fritzconnection.lib.fritzcall import FritzCall
+from fritzconnection.cli.fritzinspection import FritzInspection
 
 from callinfo import CallInfo
 from callprefix import CallPrefix
@@ -19,6 +20,13 @@ if __name__ == "__main__":
     fc = FritzCall(fc=fritzconn)
     cp = CallPrefix(fc=fritzconn)
     pb = Phonebook(fc=fritzconn)
+
+    fi = FritzInspection(fc=fritzconn)
+    # print(fi.view_servicenames())
+
+    print("VoIP numbers (XML):")
+    res = pb.get_voip_numbers()
+    print(res)
 
     print('Internal active handset devices:')
     res = pb.get_handset_info(keep_phone_only=False)
