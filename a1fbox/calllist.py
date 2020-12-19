@@ -3,10 +3,11 @@
 from collections import Counter
 from time import sleep
 
+from fritzconnection.lib.fritzcall import FritzCall
+
 from callinfo import CallInfo
 from callprefix import CallPrefix
 from fritzconn import FritzConn
-from fritzconnection.lib.fritzcall import FritzCall
 from phonebook import Phonebook
 
 if __name__ == "__main__":
@@ -49,7 +50,6 @@ if __name__ == "__main__":
     print(numbers)
 
     anylist = pb.get_all_numbers_for_pb_ids([0, 1, 2], keep_internals=False)  # White- or blacklist
-    print(anylist)
 
     print('\nWhite- or blacklisted:')
     unknowns = set()
