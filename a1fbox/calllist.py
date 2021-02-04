@@ -2,6 +2,7 @@
 
 from collections import Counter
 from time import sleep
+from xml.etree import ElementTree as ET
 
 from fritzconnection.lib.fritzcall import FritzCall
 from fritzconnection.cli.fritzinspection import FritzInspection
@@ -24,9 +25,20 @@ if __name__ == "__main__":
     fi = FritzInspection(fc=fritzconn)
     # print(fi.view_servicenames())
 
+    anylist = pb.get_all_numbers_for_pb_ids([0, 1, 2], keep_internals=False)  # White- or blacklist
+
     print("VoIP numbers (XML):")
     res = pb.get_voip_numbers()
     print(res)
+
+    print("Adding to whitelist internal numbers:")
+    tree = ET.fromstring(res)
+    iphones = dict()
+    for node in tree.iter('Number'):
+        nr = cp.area_code + node.text
+        iphones.update({nr: 'intern'})
+    anylist.update(iphones)
+    print(iphones)
 
     print('Internal active handset devices:')
     res = pb.get_handset_info(keep_phone_only=False)
@@ -56,8 +68,6 @@ if __name__ == "__main__":
 
     print(f'\nLast {len(calls)} calls, uniqued: {len(numbers)}')
     print(numbers)
-
-    anylist = pb.get_all_numbers_for_pb_ids([0, 1, 2], keep_internals=False)  # White- or blacklist
 
     print('\nWhite- or blacklisted:')
     unknowns = set()
