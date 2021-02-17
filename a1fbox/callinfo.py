@@ -21,6 +21,7 @@ class CallInfoType(Enum):
     INIT = 0
     TELLOWS_SCORE = 1
     WEMGEHOERT_SCORE = 2
+    TELEFONNUMMER_NET_SCORE = 3
     REV_SEARCH = 100
     CASCADE = 101
 
@@ -48,6 +49,9 @@ class CallInfo:
         # Deactivated ATM, as too many captchas required
         # if self.score == 5 and self.name == UNKNOWN_NAME:
         #     self.get_wemgehoert_score()
+        # If Tellows has no information or the name is UNKNOWN, try also WemGehoert.de
+        if self.score == 5 and self.name == UNKNOWN_NAME:
+            self.get_telefonnummer_net_score()
         self.method = CallInfoType.CASCADE.value
 
     def get_location(self, unknown_only=True):
@@ -125,6 +129,34 @@ class CallInfo:
         except requests.exceptions.HTTPError as err:
             log.warning(err)
 
+    def get_telefonnummer_net_score(self):
+        """ Do scoring for a phone number via telefonnummer.net. """
+        self.method = CallInfoType.TELEFONNUMMER_NET_SCORE.value
+        url = f'https://www.telefonnummer.net/rufnummer/{self.number}'
+
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
+
+        try:
+            req = session.get(url, headers=headers)
+            req.raise_for_status()
+            content = req.text
+            # telefonummer.net is hard to parse, it has a wild mix, e.g.
+            #   Spam-Risiko: Gering (zb 4922189920)
+            #   Spam-Risiko: Mittel (zb 493022957920)
+            #   Einschätzung: Unseriös (zb 49611150829)
+            # But it seems at least "Unseriös" is somewhat consistent
+            str_begin = 'content="Unseriös:'
+            pos_1 = content.find(str_begin)
+            if pos_1 != -1:
+                self.score = 9
+        except requests.exceptions.HTTPError as err:
+            log.warning(err)
+
     def get_numreport_name(self):
         """ PLANNED: POST SearchForm[phone]=07191xxx to https://de.numreport.com/site/search ..
         follow redirect, then grab e.g. from data-name="Kaufland Backnang".
@@ -159,7 +191,7 @@ class CallInfo:
     def __str__(self):
         """ To relevant properties shortened output. """
         start = f'number:{self.number} name:{self.name} location:{self.location}'
-        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.WEMGEHOERT_SCORE.value,
+        if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.WEMGEHOERT_SCORE.value, CallInfoType.TELEFONNUMMER_NET_SCORE.value,
                                 CallInfoType.CASCADE.value]:
             return f'{start} score:{self.score}'
         else:
@@ -178,6 +210,9 @@ if __name__ == "__main__":
     print(ci)
     ci.get_wemgehoert_score()
     assert ci.method == CallInfoType.WEMGEHOERT_SCORE.value
+    print(ci)
+    ci.get_telefonnummer_net_score()
+    assert ci.method == CallInfoType.TELEFONNUMMER_NET_SCORE.value
     print(ci)
     ci.get_revsearch_info()
     assert ci.method == CallInfoType.REV_SEARCH.value
