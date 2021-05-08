@@ -1,2 +1,3 @@
+json5
 requests
 fritzconnection>=1.3.3

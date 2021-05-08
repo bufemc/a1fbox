@@ -16,7 +16,7 @@ explicitely use the Python version 3, and not 2).
 
 ### Requirements
 - Python >= 3.6 - as e.g. f'Hello, {name}!' is used
-- Packages ```requests``` and [fritzconnection] by Klaus Bremer aka kbr 
+- Packages ```requests``` and ```json5``` and [fritzconnection] by Klaus Bremer aka kbr 
 - A Fritz!Box, reachable within your network with your credentials, and if using call monitor or blocker:
     - enabled call monitor - to enable dial ```#96*5*``` - and to disable dial ```#96*4```
     - either standard or dedicated user with password (set in ```config.py```) and enough permissions

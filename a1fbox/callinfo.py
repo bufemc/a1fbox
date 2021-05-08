@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json5
 import logging
 from enum import Enum
 
@@ -97,7 +98,7 @@ class CallInfo:
             log.warning(err)
 
     def get_wemgehoert_score(self):
-        """ Do scoring for a phone number via wemgehoert.de - extract percentage as score. """
+        """ Do scoring for a phone number via wemgehoert.de - extract percentage as score. CURRENTLY DOES NOT WORK! """
         self.method = CallInfoType.WEMGEHOERT_SCORE.value
         url = f'https://www.wemgehoert.de/nummer/{self.number}'
 
@@ -135,24 +136,50 @@ class CallInfo:
     def get_revsearch_info(self):
         """ Do reverse search via DasOertliche, currently ugly parsing, which might fail if name has commas? """
         self.method = CallInfoType.REV_SEARCH.value
-        url = f'https://www.dasoertliche.de/Controller?form_name=search_inv&ph={self.number}'
+        code_2020 = False
+        if code_2020:
+            url = f'https://www.dasoertliche.de/Controller?form_name=search_inv&ph={self.number}'
+        else:
+            url = f'https://www.dasoertliche.de/rueckwaertssuche/?ph={self.number}&pa=&address='
         try:
             req = requests.get(url)
             req.raise_for_status()
             content = req.text
-            # Extract only the javascript line "handlerData", precisely the content between [[ .. ]
-            str_begin = 'var handlerData = [['
-            str_end = ']'  # Ends with ]] if one match only, but can contain several names, e.g. 071919524xx
-            pos_1 = content.find(str_begin)
-            if pos_1 != -1:
-                content = content[pos_1 + len(str_begin):]
-                pos_n = content.find(str_end)
-                if pos_n != -1:
-                    content = content[:pos_n]
-                    parts = content.split(',')
-                    city = parts[5].strip("' ")  # "ci" in source view
-                    name = parts[14].strip("' ")  # "na" in source view
-                    self.name = name + ", " + city
+
+            if code_2020:
+                # Extract only the javascript line "handlerData", precisely the content between [[ .. ]
+                str_begin = 'var handlerData = [['
+                str_end = ']'  # Ends with ]] if one match only, but can contain several names, e.g. 071919524xx
+                pos_1 = content.find(str_begin)
+                if pos_1 != -1:
+                    content = content[pos_1 + len(str_begin):]
+                    pos_n = content.find(str_end)
+                    if pos_n != -1:
+                        content = content[:pos_n]
+                        parts = content.split(',')
+                        city = parts[5].strip("' ")  # "ci" in source view
+                        name = parts[14].strip("' ")  # "na" in source view
+                        self.name = name + ", " + city
+                        # self.location = city
+
+            else:
+                str_begin = 'generic: {'
+                str_end = '}'
+                pos_1 = content.find(str_begin)
+                if pos_1 != -1:
+                    content = content[pos_1 + len(str_begin)-1:]
+                    pos_n = content.find(str_end)
+                    if pos_n != -1:
+                        content = content[:pos_n+1]
+                        # Convert to valid JSON, either manually or by using json5 instead of json
+                        # content = re.sub('(?i)([a-z_].*?):', r'"\1":', content)
+                        res = json5.loads(content)
+                        city = res['city']
+                        name = res['name']
+                        # More data would be available: street, zip, phones, email
+                        self.name = name + ", " + city
+                        # self.location = city
+
         except requests.exceptions.HTTPError as err:
             log.warning(err)
 
@@ -170,18 +197,27 @@ if __name__ == "__main__":
     # Quick example how to use only
     # Warning: the object ci is re-used here all the time, but not reverted, should be solved better in unit tests.
     number = "004922189920"  # BzGA
+
     ci = CallInfo(number)
     assert ci.method == CallInfoType.INIT.value
     print(ci)
+
+    ci = CallInfo(number)
     ci.get_tellows_score()
     assert ci.method == CallInfoType.TELLOWS_SCORE.value
     print(ci)
+
+    ci = CallInfo(number)
     ci.get_wemgehoert_score()
     assert ci.method == CallInfoType.WEMGEHOERT_SCORE.value
     print(ci)
+
+    ci = CallInfo(number)
     ci.get_revsearch_info()
     assert ci.method == CallInfoType.REV_SEARCH.value
     print(ci)
+
+    ci = CallInfo(number)
     ci.get_cascade_score()
     assert ci.method == CallInfoType.CASCADE.value
     print(ci)
