@@ -78,6 +78,9 @@ if __name__ == "__main__":
         else:
             unknowns.add(number)
 
+    # Sort them on purpose to find nearly identical numbers by eye
+    unknowns = sorted(list(unknowns))
+
     # Idea: rate & info ... auto-block .. or add good names to whitelist?
     print(f'\nResolving Unknowns: {len(unknowns)}')
     for unknown in unknowns:
@@ -86,6 +89,6 @@ if __name__ == "__main__":
         if not ci.location:
             ci.location = cp.get_prefix_name(unknown)
         print(ci)
-        sleep(5)  # Anti-DDOS needed for tellows (and if used, wemgehoert), otherwise you get blocked or captcha
+        sleep(4)  # Anti-DDOS needed for tellows (and if used, wemgehoert), otherwise you get blocked or captcha
 
     print('\nREADY.')

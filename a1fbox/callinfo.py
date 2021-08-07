@@ -183,9 +183,11 @@ class CallInfo:
         except requests.exceptions.HTTPError as err:
             log.warning(err)
 
-    def __str__(self):
+    def __str__(self, add_link=True):
         """ To relevant properties shortened output. """
         start = f'number:{self.number} name:{self.name} location:{self.location}'
+        if add_link:
+            start = f'{start} link:http://www.google.com/search?q={self.number}'
         if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.WEMGEHOERT_SCORE.value,
                                 CallInfoType.CASCADE.value]:
             return f'{start} score:{self.score}'

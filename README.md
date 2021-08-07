@@ -92,7 +92,7 @@ If you want to update them, then download the offered CSV file (see link titled 
 from [BNetzA-ONB]. Unpack the archive (there can be an archive in the archive, unpack also this) 
 and save the file, but renamed to ```onb.csv```, in the ./data directory.
 
-RNB are "Mobile Dienste, zugeteilte RNB, Stand: 12.03.2019". Data was copied from https://tinyurl.com/y7648pc9 -
+RNB are "Mobile Dienste, zugeteilte RNB, Stand: 07.07.2021". Data was copied from https://bit.ly/3jyZBU8 now -
 just replace the first space or tab with a semicolon. 
 
 Country data is taken from http://country.io/data/ - http://country.io/phone.json and http://country.io/names.json -
@@ -101,7 +101,7 @@ downloaded 28th June 2020, but not sure how accurate the data is.
 Further numbers used in Germany:
 https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/Rufnummern_node.html
 
-ONB file provided here, was originally named: NVONB.INTERNET.20200610.ONB 
+ONB file provided here, was originally named: NVONB.INTERNET.20210728.ONB (no change to 2020)
 
 Further sources are noted in internal code!
     
@@ -223,4 +223,4 @@ ToDo and/or further planning (pb = phonebook):
 [fc-issue-50]: https://github.com/kbr/fritzconnection/issues/50
 [fc-issue-53]: https://github.com/kbr/fritzconnection/issues/53
 [fc-issue-55]: https://github.com/kbr/fritzconnection/issues/55
-[BNetzA-ONB]: https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html
+[BNetzA-ONB]: https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_node.html
