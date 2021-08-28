@@ -84,6 +84,10 @@ if __name__ == "__main__":
     # Idea: rate & info ... auto-block .. or add good names to whitelist?
     print(f'\nResolving Unknowns: {len(unknowns)}')
     for unknown in unknowns:
+        # Skip those starting with a prefix in phonebooks, e.g. 0039(*) for Italy, 069660(*), 0211945(*)
+        if any(known in unknown for known in anylist):
+            print("skipped as prefix found in phonebook: " + unknown)
+            continue
         ci = CallInfo(unknown)
         ci.get_cascade_score()
         if not ci.location:
