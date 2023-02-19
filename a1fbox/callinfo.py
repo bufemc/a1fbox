@@ -12,12 +12,14 @@ log = logging.getLogger(__name__)
 UNKNOWN_NAME = 'UNKNOWN'
 UNKNOWN_LOCATION = 'UNKNOWN'
 UNRESOLVED_PREFIX_NAME = 'UNRESOLVED'  # Dependency: callprefix & ONB/RNB!
+UNRESOLVED_PREFIX_CODE = 'UNRESOLVED'
+UNRESOLVED_PREFIX_KIND = 'UNRESOLVED'
 
-session = requests.session()  # Re-use for wemgehoert.de
+session = requests.session()  # Re-use for wemgehoert.de, ToDo: should be a singleton for the class
 
 
 class CallInfoType(Enum):
-    """ Which method has been used to enrich the data, if none it's 0. """
+    """ Which method has been used to enrich the data, if none it's 0. For name use CallInfoType(index).name. """
 
     INIT = 0
     TELLOWS_SCORE = 1
@@ -29,12 +31,15 @@ class CallInfoType(Enum):
 class CallInfo:
     """ Retrieve details for a phone number. Currently scoring via Tellows or naming a number via reverse search. """
 
-    def __init__(self, number, name=None, location=None):
+    def __init__(self, number, name=None, location=None, cp=None):
         """ Might enrich information about a phone number. Caches not used yet. """
         self.number = number
+        self.cp = cp if cp else None
         self.name = name if name else UNKNOWN_NAME
         self.location = location if location else UNKNOWN_LOCATION
         self.prefix_name = UNRESOLVED_PREFIX_NAME
+        self.prefix_code = UNRESOLVED_PREFIX_CODE
+        self.prefix_kind = UNRESOLVED_PREFIX_KIND
         self.method = CallInfoType.INIT.value
 
     def get_cascade_score(self):
@@ -49,14 +54,31 @@ class CallInfo:
         # Deactivated ATM, as too many captchas required
         # if self.score == 5 and self.name == UNKNOWN_NAME:
         #     self.get_wemgehoert_score()
-        self.method = CallInfoType.CASCADE.value
+        # If CallPrefix has been passed in Init use it to improve location and kind
+        if self.cp:
+            self.get_prefix_dict(update_unknown_location=True, update_unknown_name=False)
+        self.method = CallInfoType.CASCADE.value  # Has to be overrided at the end
+
+    def get_prefix_dict(self, update_unknown_location=True, update_unknown_name=False):
+        """ Will use CallPrefix class to retrieve location, name, code, kind. Examples:
+        {'code': '07191', 'name': 'Backnang', 'kind': <CallPrefixType.DE_LANDLINE: 1>} or
+        {'code': '0175', 'name': 'Telekom Deutschland GmbH', 'kind': <CallPrefixType.DE_MOBILE: 10>}. """
+        res = self.cp.get_prefix_dict(self.number)
+        if update_unknown_location and self.location == UNKNOWN_LOCATION:
+            self.location = res['name']
+        if update_unknown_name and self.name == UNKNOWN_NAME:
+            self.name = res['name']
+        self.prefix_name = res['name']
+        self.prefix_code = res['code']
+        self.prefix_kind = res['kind']
 
     def get_location(self, unknown_only=True):
-        """ PLANNED. Retrieve location by using ONB list. Optionally only if not retrieved otherwise before. """
+        """ Fallback to retrieve location by using ONB list. Optionally only if not retrieved otherwise before.
+        Obsolete if you use get_prefix_dict, will also set the location. """
         if unknown_only and self.location != UNKNOWN_LOCATION:
             return
-        # Planning to implement, but for that we need to combine callprefix & callinfo somehow..
-        pass
+        elif self.cp:  # Only if callprefix has been passed in init
+            self.location = self.cp.get_prefix_name(self.number)
 
     def get_tellows_score(self):
         """ Do scoring for a phone number via Tellows - extract score, comments, build a name:
@@ -183,11 +205,15 @@ class CallInfo:
         except requests.exceptions.HTTPError as err:
             log.warning(err)
 
-    def __str__(self, add_link=True):
-        """ To relevant properties shortened output. """
+    def __str__(self, add_link=True, add_kind=True, add_method=True):
+        """ To relevant properties shortened output. ToDo: output the full prefix dict? """
         start = f'number:{self.number} name:{self.name} location:{self.location}'
+        if add_kind:
+            start = f'{start} kind:{self.prefix_kind}'
         if add_link:
             start = f'{start} link:http://www.google.com/search?q={self.number}'
+        if add_method:
+            start = f'{start} method:{CallInfoType(self.method).name}'
         if int(self.method) in [CallInfoType.TELLOWS_SCORE.value, CallInfoType.WEMGEHOERT_SCORE.value,
                                 CallInfoType.CASCADE.value]:
             return f'{start} score:{self.score}'
@@ -198,28 +224,66 @@ class CallInfo:
 if __name__ == "__main__":
     # Quick example how to use only
     # Warning: the object ci is re-used here all the time, but not reverted, should be solved better in unit tests.
+
+    from time import sleep
+
+    # Initialize by using parameters from config file
+    from fritzconn import FritzConn
+    from callprefix import CallPrefix, CallPrefixType
+    fritzconn = FritzConn()
+    cp = CallPrefix(fc=fritzconn)
+
+
+    # Testing CallInfo with using CallPrefix
+    print("\nTest by including CallPrefix:\n")
+
+    number = "07191000"  # Fake number just to test call prefix location resolving
+    ci = CallInfo(number, cp=cp)
+    ci.get_cascade_score()
+    print(ci)
+    assert ci.method == CallInfoType.CASCADE.value
+    assert ci.location == 'Backnang'
+    assert ci.prefix_name == 'Backnang'
+    assert ci.prefix_code == '07191'
+    assert ci.prefix_kind == CallPrefixType.DE_LANDLINE
+
+    number = "0175000"  # Fake number just to test call prefix type resolving
+    ci = CallInfo(number, cp=cp)
+    ci.get_cascade_score()
+    print(ci)
+    assert ci.method == CallInfoType.CASCADE.value
+    assert ci.location == 'T-Mobile'
+    assert ci.prefix_name == 'Telekom Deutschland GmbH'
+    assert ci.prefix_code == '0175'
+    assert ci.prefix_kind == CallPrefixType.DE_MOBILE
+
+    sleep(1)  # tellows rate limiting, throws 429 Client Error: Too Many Requests for url
+
+    # Testing CallInfo WITHOUT CallPrefix
+    print("\nTest by using CallInfo alone, without CallPrefix:\n")
+
     number = "004922189920"  # BzGA
 
     ci = CallInfo(number)
-    assert ci.method == CallInfoType.INIT.value
     print(ci)
+    assert ci.method == CallInfoType.INIT.value
 
     ci = CallInfo(number)
     ci.get_tellows_score()
-    assert ci.method == CallInfoType.TELLOWS_SCORE.value
     print(ci)
+    assert ci.method == CallInfoType.TELLOWS_SCORE.value
 
     ci = CallInfo(number)
     ci.get_wemgehoert_score()
-    assert ci.method == CallInfoType.WEMGEHOERT_SCORE.value
     print(ci)
+    assert ci.method == CallInfoType.WEMGEHOERT_SCORE.value
 
     ci = CallInfo(number)
     ci.get_revsearch_info()
-    assert ci.method == CallInfoType.REV_SEARCH.value
     print(ci)
+    assert ci.method == CallInfoType.REV_SEARCH.value
 
     ci = CallInfo(number)
     ci.get_cascade_score()
-    assert ci.method == CallInfoType.CASCADE.value
     print(ci)
+    assert ci.method == CallInfoType.CASCADE.value
